@@ -17,31 +17,40 @@ public class Flyer {
     return jointPos;    
   }
   
-  private PVector wingPositionForJoint(int joint, boolean isLeft)
+  private PVector wingPositionForJoint(int joint, boolean isRight)
   {
     PVector jointPx = screenPositionForJoint(joint);
     PVector wingPos = new PVector();
-    wingPos.x = (jointPx.x * strandWidth / 2 / imageWidth) + (isLeft ? strandWidth / 2.0 : 0.0);
-    wingPos.y = (jointPx.y * strandHeight / imageHeight); 
+    wingPos.x = (jointPx.x * wingWidth / imageWidth) + (isRight ? wingWidth : 0.0);
+    wingPos.y = (jointPx.y * wingHeight / imageHeight); 
     return wingPos;
   }
   
   public void update()
   {
     if (userID == -1) {
-      return;      
+      return;
     }
     
-    PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, true);
-    PVector leftElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_ELBOW, true);
-    PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, false);
-    PVector rightElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_ELBOW, false);
+    PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
+    PVector leftElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_ELBOW, false);
+    PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);
+    PVector rightElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_ELBOW, true);
     
-    colorMode(HSB, strandHeight, 100, 100);
+    clip(0, 0, wingWidth, wingHeight);
+    colorMode(HSB, wingHeight, 100, 100);
     stroke(leftHandPx.y, 100, 100);
     drawLongLineThrough(leftHandPx, leftElbowPx);
+//    fill(#0000FF);
+//    rect(0, 0, wingsRegionWidth, wingsRegionHeight);
+    noClip();
+    
+    clip(wingWidth, 0, wingWidth, wingHeight);
     stroke(rightHandPx.y, 100, 100);
     drawLongLineThrough(rightHandPx, rightElbowPx);
+//    fill(#FF0000);
+//    rect(0, 0, wingsRegionWidth, wingsRegionHeight);
+    noClip();
   }
   
   private void drawLongLineThrough(PVector p1, PVector p2)
@@ -49,11 +58,11 @@ public class Flyer {
     float slope = (p1.y - p2.y) / (p1.x - p2.x);
     int sign = (slope > 0 ? 1 : -1);
     
-    p1.x -= sign * strandWidth;
-    p1.y -= sign * strandWidth * slope;
+    p1.x -= sign * wingsRegionWidth;
+    p1.y -= sign * wingsRegionWidth * slope;
     
-    p2.x += sign * strandWidth;
-    p2.y += sign * strandWidth * slope;
+    p2.x += sign * wingsRegionWidth;
+    p2.y += sign * wingsRegionWidth * slope;
         
     line(p2.x, p2.y, p1.x, p1.y);
   }

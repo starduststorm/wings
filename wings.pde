@@ -3,9 +3,14 @@ import SimpleOpenNI.*;
 OPC opc;
 SimpleOpenNI kinect;
 Flyer flyer;
+PulsePattern pulsePattern;
 
-final int strandWidth = 8;
-final int strandHeight = 64;
+final int kFingerLengths[] = {64, 64, 64, 64, 64, 64, 64, 64};
+
+final int wingWidth = 8;
+final int wingHeight = 64;
+final int wingsRegionWidth = 16;
+final int wingsRegionHeight = wingHeight;
 
 int imageWidth;
 int imageHeight;
@@ -26,10 +31,13 @@ void setup()
   flyer.kinect = kinect;
   flyer.opc = opc;
   
-  background(0,0,0);
-  size(strandWidth + imageWidth, max(strandHeight, imageHeight), P3D); 
+  pulsePattern = new PulsePattern(0, 0, wingsRegionWidth, wingsRegionHeight);
   
-  frameRate(20);
+  background(0,0,0);
+  size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 
+  
+  frameRate(30);
+  textSize(8);
 }
 
 void draw()
@@ -39,7 +47,7 @@ void draw()
   // Draw infrared image and skeleton
   blendMode(BLEND);
   pushMatrix();
-  translate(strandWidth, 0, 0);
+  translate(wingsRegionWidth, 0, 0);
   image(kinect.depthImage(), 0, 0);
   
   
@@ -48,37 +56,45 @@ void draw()
   int positionedUserId = -1;
   int[] users = kinect.getUsers();
   for (int i = 0; i < users.length; ++i) {
-    if (kinect.isTrackingSkeleton(users[i])) {
-      if (userIsInPosition(users[i])) {
-        positionedUserId = users[i];
-        drawSkeleton(users[i]);
-        break;
-      }
+    if (kinect.isTrackingSkeleton(users[i]) && userIsInPosition(users[i])) {
+      positionedUserId = users[i];
+      drawSkeleton(users[i]);
+      break;
     }
   }
   popMatrix();
   
   // Fade out the old patterns
-  int fadeRate = 2;
+  int fadeRate = (positionedUserId == -1 ? 6 : 2);
   colorMode(RGB, 100);
   blendMode(SUBTRACT);
   noStroke();
   fill(fadeRate, fadeRate, fadeRate, 100);
-  rect(0, 0, strandWidth, strandHeight);
+  rect(0, 0, wingsRegionWidth, wingsRegionHeight);
   
   // Draw flyer stuff
   blendMode(BLEND);
   flyer.userID = positionedUserId;
-  flyer.update(); 
+  flyer.update();
+   
+  pulsePattern.update(positionedUserId); 
   
   // Write pixels
-  for (int x = 0; x < strandWidth; ++x) {
-    for (int y = 0; y < strandHeight; ++y) {
+  for (int x = 0; x < wingsRegionWidth; ++x) {
+    for (int y = 0; y < wingsRegionHeight; ++y) {
       color c = get(x, y);
-      opc.setPixel(y + strandHeight * x, c);      
+      opc.setPixel(y + wingsRegionHeight * x, c);
     }
   }
   opc.writePixels();
+  
+  colorMode(RGB, 100);
+  noStroke();
+  fill(#000000);
+  rect(0, height - 20, 24, 20);
+  fill(#FFFFFF);
+  stroke(#FFFFFF);
+  text(String.format("%.1f", frameRate), 0, height - 10);
 }
 
 boolean userIsInPosition(int userId)

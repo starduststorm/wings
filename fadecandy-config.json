@@ -1,0 +1,21 @@
+{
+    "listen": ["127.0.0.1", 7890],
+    "verbose": true,
+    
+    "devices": [
+        {
+            "type": "fadecandy",
+            "serial": "WOKWPPPFUKXBBZKX",
+            "map": [
+                [ 0, 0, 0, 512 ]
+            ]
+        },
+        {
+            "type": "fadecandy",
+            "serial": "CYEYJDXFSKHVBNYB",
+            "map": [
+                [ 0, 512, 0, 512 ]
+            ]
+        }
+    ]
+}

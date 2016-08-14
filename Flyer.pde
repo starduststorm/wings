@@ -1,10 +1,37 @@
+import java.util.Random;
+
+int modeCount = 1;
+final int HandElbowRay = modeCount++;
+final int WaveyPatterns = modeCount++;
+final int FlyerModeCount = modeCount;
+
+final int TEST_MODE = WaveyPatterns;
+
+
+private class BezierPath {
+  PVector p1, p2;
+  PVector c1, c2;
+}
+
 public class Flyer {
   public int userID;
+  public int lastUserID;
   public SimpleOpenNI kinect;
   public OPC opc;
   
+  Random random;
+  private int mode;
+  
+  // mode vars
+  
+  ArrayList<BezierPath> beziers;
+  
+  //
+  
   Flyer()
   {
+    random = new Random();
+    beziers = new ArrayList<BezierPath>();
   }
   
   private PVector screenPositionForJoint(int joint)
@@ -28,10 +55,75 @@ public class Flyer {
   
   public void update()
   {
-    if (userID == -1) {
+    if (userID == -1 && TEST_MODE == 0) {
       return;
     }
     
+    if (TEST_MODE != 0) {
+      mode = TEST_MODE;
+    } else if (userID != lastUserID) {
+      mode = random.nextInt(FlyerModeCount);       
+    }
+    
+    // fuck java's switch statement
+    if (mode == HandElbowRay) {
+        runModeHandElbowRay();
+    } else if (mode ==  WaveyPatterns) {
+        runModeWaveyPatterns();
+    }
+    
+    lastUserID = userID;
+  }
+  
+  private void runModeWaveyPatterns()
+  {
+    final int segmentCount = 20;
+    
+    if (userID != lastUserID || beziers.size() == 0) {
+      for (int i = 0; i < segmentCount; ++i) {
+        BezierPath path = new BezierPath();
+        path.p1 = new PVector(random.nextInt(wingsRegionWidth), random.nextInt(wingsRegionHeight));
+        path.p2 = new PVector(random.nextInt(wingsRegionWidth), random.nextInt(wingsRegionHeight));
+        path.c1 = new PVector(random.nextInt((int)(path.p1.x + random.nextInt(5))) - 0,
+                              random.nextInt((int)(path.p1.y + random.nextInt(5))) - 0);
+        path.c2 = new PVector(random.nextInt((int)(path.p2.x + random.nextInt(5))) - 0,
+                              random.nextInt((int)(path.p2.y + random.nextInt(5))) - 0);
+                              
+        // FIXME: - 0
+
+        beziers.add(path);
+      }
+    }
+    
+    // bezier(x1, y1, x2, y2, x3, y3, x4, y4)
+    // bezierPoint(p1, c1, c2, p2, t)   p == point, c == control
+    colorMode(HSB, 100);
+    noFill();
+    stroke(0, 0, 255);
+    
+    PVector lastPoint = null;
+    for (int i = 0; i < beziers.size(); ++i) {
+      BezierPath path = beziers.get(i);
+      float x = bezierPoint(path.p1.x, path.c1.x, path.c1.y, path.p1.y, i / (float)segmentCount);
+      float y = bezierPoint(path.p2.x, path.c2.x, path.c2.y, path.p2.y, i / (float)segmentCount);
+      
+      println("x = ", x, ", y = ", y);
+      
+//      stroke(10, 255, 50);
+//      x = random.nextInt(wingsRegionWidth);
+//      y = random.nextInt(wingsRegionHeight);
+      
+      if (lastPoint != null) {
+        line(lastPoint.x, lastPoint.y, x, y);
+        lastPoint = null;
+      } else {
+        lastPoint = new PVector(x, y);
+      }
+    }
+  }
+  
+  private void runModeHandElbowRay()
+  {
     PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
     PVector leftElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_ELBOW, false);
     PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);

@@ -12,6 +12,10 @@ final int wingHeight = 64;
 final int wingsRegionWidth = 16;
 final int wingsRegionHeight = wingHeight;
 
+PVector leftHandPosition = new PVector(0, 0);
+PVector rightHandPosition = new PVector(0, 0);
+int unmovedFrames = 0;
+
 int imageWidth;
 int imageHeight;
 
@@ -62,6 +66,7 @@ void draw()
       break;
     }
   }
+  positionedUserId = 0;
   popMatrix();
   
   // Fade out the old patterns
@@ -97,10 +102,28 @@ void draw()
   text(String.format("%.1f", frameRate), 0, height - 10);
 }
 
-boolean userIsInPosition(int userId)
+boolean userIsInPosition(int userID)
 {
+  // Hasn't moved in a while? Probably gone.
+  // The kinect lib likes to keep a bogus frame around for a while, unmoving, at the edge of the frame.
+  
+  PVector newLeftHandPos = new PVector();
+  PVector newRightHandPos = new PVector();
+  kinect.getJointPositionSkeleton(userID, SimpleOpenNI.SKEL_LEFT_HAND, newLeftHandPos);
+  kinect.getJointPositionSkeleton(userID, SimpleOpenNI.SKEL_RIGHT_HAND, newRightHandPos);
+  
+  if (newLeftHandPos.x == leftHandPosition.x && newLeftHandPos.y == leftHandPosition.y &&
+      newRightHandPos.x == rightHandPosition.x && newRightHandPos.y == rightHandPosition.y) {
+    unmovedFrames++;
+    if (unmovedFrames > 30) {
+      return false;
+    }
+  }
+  leftHandPosition = newLeftHandPos;
+  rightHandPosition = newRightHandPos;
+  
   PVector centerOfMass = new PVector();
-  kinect.getCoM(userId, centerOfMass);
+  kinect.getCoM(userID, centerOfMass);
 //  println(centerOfMass); 
   return true;
 }

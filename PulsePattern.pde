@@ -1,7 +1,8 @@
 public class PulsePattern {
-  int pulseStart;
+  int pulseStart = -1;
   
   int startx, starty;
+  int lastY = 0;
   int regionWidth, regionHeight;
   
   public PulsePattern(int startx, int starty, int regionWidth, int regionHeight)
@@ -21,6 +22,7 @@ public class PulsePattern {
   
   public void update(int userId)
   {
+    pushStyle();
     if (userId != -1 && pulseStart == -1) {
       return;
     }
@@ -31,20 +33,27 @@ public class PulsePattern {
     }
     
     int pulseElapsed = millis() - pulseStart;
-    float percentComplete = cubicEaseOut(pulseElapsed, 800.0);
-    println("elapsed: " + pulseElapsed + ", % = " + percentComplete);
+    float percentComplete = cubicEaseOut(pulseElapsed, 1200.0);
     
-    float pulseY = percentComplete * regionHeight;
+    int pulseY = (int)ceil(percentComplete * regionHeight);
+    
+    colorMode(RGB, 100);
+    noSmooth();
+    for (int i = lastY; i < pulseY; ++i) {
+      float alpha = max(40, 100 * (i / (float)pulseY));
+      stroke(0, 30, 50, alpha);
+      println("Line at " + i + ", alpha = " + alpha);
+      line(0, i, regionWidth, i);
+    }
+//    rect(0, lastY, regionWidth, pulseY - lastY);
+    popMatrix();
     
     if (pulseElapsed > 1600) {
       pulseStart = -1;
-    } 
-    
-    colorMode(RGB, 100);
-    fill(0, 30, 50);
-    noStroke();
-    // TODO: Draw this rect like a gradient from the previous frame to make it look smooth
-    rect(0, pulseY, regionWidth, 4);
-    popMatrix();
+      lastY = 0;
+    } else {
+      lastY = pulseY;
+    }
+    popStyle();
   }
 }

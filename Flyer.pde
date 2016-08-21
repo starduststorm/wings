@@ -1,11 +1,11 @@
 import java.util.Random;
 
 int modeCount = 1;
-final int HandElbowRay = modeCount++;
+final int HandElbowLine = modeCount++;
 final int WaveyPatterns = modeCount++;
 final int FlyerModeCount = modeCount;
 
-final int TEST_MODE = WaveyPatterns;
+final int TEST_MODE = HandElbowLine;
 
 
 private class BezierPath {
@@ -66,8 +66,8 @@ public class Flyer {
     }
     
     // fuck java's switch statement
-    if (mode == HandElbowRay) {
-        runModeHandElbowRay();
+    if (mode == HandElbowLine) {
+        runModeHandElbowLine();
     } else if (mode ==  WaveyPatterns) {
         runModeWaveyPatterns();
     }
@@ -84,13 +84,11 @@ public class Flyer {
         BezierPath path = new BezierPath();
         path.p1 = new PVector(random.nextInt(wingsRegionWidth), random.nextInt(wingsRegionHeight));
         path.p2 = new PVector(random.nextInt(wingsRegionWidth), random.nextInt(wingsRegionHeight));
-        path.c1 = new PVector(random.nextInt((int)(path.p1.x + random.nextInt(5))) - 0,
-                              random.nextInt((int)(path.p1.y + random.nextInt(5))) - 0);
-        path.c2 = new PVector(random.nextInt((int)(path.p2.x + random.nextInt(5))) - 0,
-                              random.nextInt((int)(path.p2.y + random.nextInt(5))) - 0);
+        path.c1 = new PVector(path.p1.x + random.nextInt(10) - 5,
+                              path.p1.y + random.nextInt(10) - 5);
+        path.c2 = new PVector(path.p2.x + random.nextInt(10) - 5,
+                              path.p2.y + random.nextInt(10) - 5);
                               
-        // FIXME: - 0
-
         beziers.add(path);
       }
     }
@@ -122,7 +120,7 @@ public class Flyer {
     }
   }
   
-  private void runModeHandElbowRay()
+  private void runModeHandElbowLine()
   {
     PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
     PVector leftElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_ELBOW, false);

@@ -57,6 +57,13 @@ void draw()
   
   stroke(color(255,0,0));
   colorMode(HSB, 100);
+  
+  
+  
+  // FIXME: keep the same positionedUserId if available!
+  
+  
+  
   int positionedUserId = -1;
   int[] users = kinect.getUsers();
   for (int i = 0; i < users.length; ++i) {
@@ -66,7 +73,7 @@ void draw()
       break;
     }
   }
-  positionedUserId = 0;
+//  positionedUserId = 0;
   popMatrix();
   
   // Fade out the old patterns

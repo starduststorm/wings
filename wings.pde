@@ -6,6 +6,7 @@ Flyer flyer;
 PulsePattern pulsePattern;
 
 final int kFingerLengths[] = {64, 64, 64, 64, 64, 64, 64, 64};
+final int kFingerTopCounts[] = {0, 6, 6, 8, 13, 16, 9, 9};
 
 final int wingWidth = 8;
 final int wingHeight = 64;
@@ -28,8 +29,11 @@ void setup()
   kinect.enableDepth();
   kinect.enableUser();
   
-  imageWidth = kinect.depthWidth();
-  imageHeight = kinect.depthHeight();
+  println("kinect.depthWidth() = " + kinect.depthWidth());
+  println("kinect.depthHeight() = " + kinect.depthHeight());
+  
+  imageWidth = max(kinect.depthWidth(), wingsRegionWidth);
+  imageHeight = max(kinect.depthHeight(), wingsRegionHeight);
     
   flyer = new Flyer();
   flyer.kinect = kinect;
@@ -48,12 +52,16 @@ void draw()
 {
   kinect.update();
   
-  // Draw infrared image and skeleton
-  blendMode(BLEND);
-  pushMatrix();
-  translate(wingsRegionWidth, 0, 0);
-  image(kinect.depthImage(), 0, 0);
+  int positionedUserId = -1;
   
+  // Draw infrared image and skeleton
+  PImage depthImage = kinect.depthImage();
+  if (depthImage != null) {
+    blendMode(BLEND);
+    pushMatrix();
+    translate(wingsRegionWidth, 0, 0);
+    image(kinect.depthImage(), 0, 0);
+   
   
   stroke(color(255,0,0));
   colorMode(HSB, 100);
@@ -64,17 +72,17 @@ void draw()
   
   
   
-  int positionedUserId = -1;
-  int[] users = kinect.getUsers();
-  for (int i = 0; i < users.length; ++i) {
-    if (kinect.isTrackingSkeleton(users[i]) && userIsInPosition(users[i])) {
-      positionedUserId = users[i];
-      drawSkeleton(users[i]);
-      break;
+    int[] users = kinect.getUsers();
+    for (int i = 0; i < users.length; ++i) {
+      if (kinect.isTrackingSkeleton(users[i]) && userIsInPosition(users[i])) {
+        positionedUserId = users[i];
+        drawSkeleton(users[i]);
+        break;
+      }
     }
+  //  positionedUserId = 0;
+    popMatrix();
   }
-//  positionedUserId = 0;
-  popMatrix();
   
   // Fade out the old patterns
   int fadeRate = (positionedUserId == -1 ? 6 : 2);
@@ -88,7 +96,7 @@ void draw()
   blendMode(BLEND);
   flyer.userID = positionedUserId;
   flyer.update();
-   
+  
   pulsePattern.update(positionedUserId); 
   
   // Write pixels

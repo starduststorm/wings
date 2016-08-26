@@ -3,7 +3,10 @@ import SimpleOpenNI.*;
 OPC opc;
 SimpleOpenNI kinect;
 Flyer flyer;
+
 PulsePattern pulsePattern;
+BitsPattern bitsPattern;
+FadeParityPattern fadeParityPattern;
 
 final int kFingerLengths[] = {64, 64, 64, 64, 64, 64, 64, 64};
 final int kFingerTopCounts[] = {0, 6, 6, 8, 13, 16, 9, 9};
@@ -20,6 +23,9 @@ int unmovedFrames = 0;
 int imageWidth;
 int imageHeight;
 
+int positionedUserId = -1;
+int lastUserSeenMillis = -1;
+
 void setup()
 {
   opc = new OPC(this, "127.0.0.1", 7890);
@@ -29,30 +35,65 @@ void setup()
   kinect.enableDepth();
   kinect.enableUser();
   
-  println("kinect.depthWidth() = " + kinect.depthWidth());
-  println("kinect.depthHeight() = " + kinect.depthHeight());
+  int depthWidth = kinect.depthWidth();
+  int depthHeight = kinect.depthHeight();
   
-  imageWidth = max(kinect.depthWidth(), wingsRegionWidth);
-  imageHeight = max(kinect.depthHeight(), wingsRegionHeight);
-    
+  if (depthWidth == 0 || depthWidth > 1000 || depthHeight == 0 || depthHeight > 1000) {
+    imageWidth = wingsRegionWidth;
+    imageHeight = wingsRegionHeight + 20; // + 20 for fps
+  } else {
+    imageWidth = max(depthWidth, wingsRegionWidth);
+    imageHeight = max(depthHeight, wingsRegionHeight);
+  }
+  
   flyer = new Flyer();
   flyer.kinect = kinect;
   flyer.opc = opc;
   
   pulsePattern = new PulsePattern(0, 0, wingsRegionWidth, wingsRegionHeight);
+  bitsPattern = new BitsPattern(wingsRegionWidth, wingsRegionHeight);
+  fadeParityPattern = new FadeParityPattern(wingsRegionWidth, wingsRegionHeight);
   
   background(0,0,0);
   size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 
   
-  frameRate(30);
+  frameRate(60);
   textSize(8);
 }
 
 void draw()
 {
+  int currentMillis = millis();
+  
   kinect.update();
   
-  int positionedUserId = -1;
+  // Keep the same positionedUserId if possible
+  int[] users = kinect.getUsers();
+  if (users != null && users.length > 0) {
+    boolean positionedUserStillTracked = false;
+    for (int i = 0; i < users.length; ++i) {
+      if (users[i] == positionedUserId) {
+        positionedUserStillTracked = true;
+        break;
+      } 
+    }
+    if (!positionedUserStillTracked) {
+      positionedUserId = -1;
+    }
+    if (!positionedUserStillTracked || !kinect.isTrackingSkeleton(positionedUserId) || !userIsInPosition(positionedUserId)) {
+      for (int i = 0; i < users.length; ++i) {
+        if (kinect.isTrackingSkeleton(users[i]) && userIsInPosition(users[i])) {
+          positionedUserId = users[i];
+          break;
+        }
+      }
+    }
+    if (positionedUserId != -1) {
+      lastUserSeenMillis = currentMillis;
+    }
+  } else {
+    positionedUserId = -1;
+  }
   
   // Draw infrared image and skeleton
   PImage depthImage = kinect.depthImage();
@@ -61,26 +102,14 @@ void draw()
     pushMatrix();
     translate(wingsRegionWidth, 0, 0);
     image(kinect.depthImage(), 0, 0);
-   
-  
-  stroke(color(255,0,0));
-  colorMode(HSB, 100);
-  
-  
-  
-  // FIXME: keep the same positionedUserId if available!
-  
-  
-  
-    int[] users = kinect.getUsers();
-    for (int i = 0; i < users.length; ++i) {
-      if (kinect.isTrackingSkeleton(users[i]) && userIsInPosition(users[i])) {
-        positionedUserId = users[i];
-        drawSkeleton(users[i]);
-        break;
-      }
+    
+    stroke(color(255,0,0));
+    colorMode(HSB, 100);
+    
+    if (positionedUserId != -1) {
+      drawSkeleton(positionedUserId);
     }
-  //  positionedUserId = 0;
+    
     popMatrix();
   }
   
@@ -97,7 +126,24 @@ void draw()
   flyer.userID = positionedUserId;
   flyer.update();
   
+  // Start patterns a second after we stop tracking someone
+  if (currentMillis - lastUserSeenMillis > 1000) {
+    if (!pulsePattern.isRunning() && !bitsPattern.isRunning() && !fadeParityPattern.isRunning()) {
+      int patternChoice = (int)random(3);
+      
+      if (patternChoice == 0) {
+        pulsePattern.startIfNeeded();
+      } else if (patternChoice == 1) {
+        bitsPattern.startIfNeeded();
+      } else if (patternChoice == 2) {
+        fadeParityPattern.startIfNeeded();
+      }
+    }
+  }
+
   pulsePattern.update(positionedUserId); 
+  bitsPattern.update(positionedUserId);
+  fadeParityPattern.update(positionedUserId);
   
   // Write pixels
   for (int x = 0; x < wingsRegionWidth; ++x) {

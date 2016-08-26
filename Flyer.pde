@@ -58,7 +58,7 @@ public class Flyer {
     if (userID == -1 && TEST_MODE == 0) {
       return;
     }
-    
+        
     if (TEST_MODE != 0) {
       mode = TEST_MODE;
     } else if (userID != lastUserID) {

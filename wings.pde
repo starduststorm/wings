@@ -8,6 +8,8 @@ PulsePattern pulsePattern;
 BitsPattern bitsPattern;
 FadeParityPattern fadeParityPattern;
 
+boolean FAKE_USER = true;
+
 final int kFingerLengths[] = {64, 64, 64, 64, 64, 64, 64, 64};
 final int kFingerTopCounts[] = {0, 6, 6, 8, 13, 16, 9, 9};
 
@@ -39,7 +41,7 @@ void setup()
   int depthHeight = kinect.depthHeight();
   
   if (depthWidth == 0 || depthWidth > 1000 || depthHeight == 0 || depthHeight > 1000) {
-    imageWidth = wingsRegionWidth;
+    imageWidth = 0;
     imageHeight = wingsRegionHeight + 20; // + 20 for fps
   } else {
     imageWidth = max(depthWidth, wingsRegionWidth);
@@ -95,6 +97,11 @@ void draw()
     positionedUserId = -1;
   }
   
+  if (FAKE_USER) {
+    positionedUserId = 0;
+    lastUserSeenMillis = currentMillis;
+  }
+  
   // Draw infrared image and skeleton
   PImage depthImage = kinect.depthImage();
   if (depthImage != null) {
@@ -120,7 +127,7 @@ void draw()
   noStroke();
   fill(fadeRate, fadeRate, fadeRate, 100);
   rect(0, 0, wingsRegionWidth, wingsRegionHeight);
-  
+    
   // Draw flyer stuff
   blendMode(BLEND);
   flyer.userID = positionedUserId;

@@ -1,16 +1,21 @@
 import java.util.Random;
 
-int modeCount = 1;
+int modeCount = 0;
 final int HandElbowLine = modeCount++;
-final int WaveyPatterns = modeCount++;
-final int FlyerModeCount = modeCount;
+final int BigAssCircles = modeCount++;
 
-final int TEST_MODE = HandElbowLine;
+final int UpTheStrands = modeCount++;  // not implemented
+final int WaveyPatterns = modeCount++; // not interactive yet
+
+final int FlyerModeCount = 2;
+ 
+final int TEST_MODE = 0;
 
 
 private class BezierPath {
   PVector p1, p2;
   PVector c1, c2;
+  color col;
 }
 
 public class Flyer {
@@ -21,6 +26,11 @@ public class Flyer {
   
   Random random;
   private int mode;
+  
+  PVector lastLeftHand = null;
+  PVector lastLeftElbow = null;
+  PVector lastRightHand = null;
+  PVector lastRightElbow = null;
   
   // mode vars
   
@@ -56,6 +66,10 @@ public class Flyer {
   public void update()
   {
     if (userID == -1 && TEST_MODE == 0) {
+      lastLeftElbow = null;
+      lastLeftHand = null;
+      lastRightElbow = null;
+      lastRightHand = null;
       return;
     }
         
@@ -67,17 +81,57 @@ public class Flyer {
     
     // fuck java's switch statement
     if (mode == HandElbowLine) {
-        runModeHandElbowLine();
-    } else if (mode ==  WaveyPatterns) {
-        runModeWaveyPatterns();
+      runModeHandElbowLine();
+    } else if (mode == BigAssCircles) {
+      runModeBigAssCircles();
+    } else if (mode == UpTheStrands) {
+      runModeUpTheStrands();
+    } else if (mode == WaveyPatterns) {
+      runModeWaveyPatterns();
     }
     
     lastUserID = userID;
   }
   
+  private void runModeBigAssCircles()
+  {
+    PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
+    PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);
+    
+    colorMode(HSB, 100);
+    fill(0, 0, 100);
+    noStroke();
+    ellipse(leftHandPx.x, leftHandPx.y, 4, 20);
+    ellipse(rightHandPx.x, rightHandPx.y, 4, 20);
+  }
+  
+  private void runModeUpTheStrands()
+  {
+//    PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
+//    PVector leftElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_ELBOW, false);
+//    PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);
+//    PVector rightElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_ELBOW, true);
+    
+    
+    
+  }
+  
+  private float contain(float f, float theMax)
+  {
+    if (f < 0) {
+      return 0;
+    }
+    if (f > theMax) { 
+      return theMax;
+    }
+    return f;
+  }
+  
   private void runModeWaveyPatterns()
   {
-    final int segmentCount = 20;
+    final int segmentCount = 30;
+    
+    colorMode(HSB, 100);
     
     if (userID != lastUserID || beziers.size() == 0) {
       for (int i = 0; i < segmentCount; ++i) {
@@ -88,20 +142,33 @@ public class Flyer {
                               path.p1.y + random.nextInt(10) - 5);
         path.c2 = new PVector(path.p2.x + random.nextInt(10) - 5,
                               path.p2.y + random.nextInt(10) - 5);
-                              
+
+        path.col = color(random(100), random(30) + 70, 100);                               
         beziers.add(path);
       }
     }
     
+    for (int i = 0; i < beziers.size(); ++i) {
+      BezierPath path = beziers.get(i);
+      path.p1.x = contain(path.p1.x + random(2) - 1.0, wingsRegionWidth);
+      path.p1.y = contain(path.p1.y + random(2) - 1.0, wingsRegionHeight);
+      path.p2.x = contain(path.p2.x + random(2) - 1.0, wingsRegionWidth);
+      path.p2.y = contain(path.p2.y + random(2) - 1.0, wingsRegionHeight);
+      path.c1.x = path.c1.x + random(4) - 2.0;
+      path.c1.y = path.c1.y + random(4) - 2.0;
+      path.c2.x = path.c2.x + random(4) - 2.0;
+      path.c2.y = path.c2.y + random(4) - 2.0;
+    }
+    
     // bezier(x1, y1, x2, y2, x3, y3, x4, y4)
     // bezierPoint(p1, c1, c2, p2, t)   p == point, c == control
-    colorMode(HSB, 100);
+    
     noFill();
-    stroke(0, 0, 255);
     
     PVector lastPoint = null;
     for (int i = 0; i < beziers.size(); ++i) {
       BezierPath path = beziers.get(i);
+      stroke(path.col);
       float x = bezierPoint(path.p1.x, path.c1.x, path.c1.y, path.p1.y, i / (float)segmentCount);
       float y = bezierPoint(path.p2.x, path.c2.x, path.c2.y, path.p2.y, i / (float)segmentCount);
       
@@ -127,34 +194,66 @@ public class Flyer {
     PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);
     PVector rightElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_ELBOW, true);
     
+    leftHandPx.x += wingWidth;
+    leftElbowPx.x += wingWidth;
+    rightHandPx.x -= wingWidth;
+    rightElbowPx.x -= wingWidth;
+    
     clip(0, 0, wingWidth, wingHeight);
     colorMode(HSB, wingHeight, 100, 100);
-    stroke(leftHandPx.y, 100, 100);
-    drawLongLineThrough(leftHandPx, leftElbowPx);
+    
+    drawLongLineThrough(leftHandPx, leftElbowPx, lastLeftHand, lastLeftElbow);
 //    fill(#0000FF);
 //    rect(0, 0, wingsRegionWidth, wingsRegionHeight);
     noClip();
     
     clip(wingWidth, 0, wingWidth, wingHeight);
     stroke(rightHandPx.y, 100, 100);
-    drawLongLineThrough(rightHandPx, rightElbowPx);
+    drawLongLineThrough(rightHandPx, rightElbowPx, lastRightHand, lastRightElbow);
 //    fill(#FF0000);
 //    rect(0, 0, wingsRegionWidth, wingsRegionHeight);
     noClip();
+    
+    lastLeftHand = leftHandPx;
+    lastLeftElbow = leftElbowPx;
+    lastRightHand = rightHandPx;
+    lastRightElbow = rightElbowPx;
   }
   
-  private void drawLongLineThrough(PVector p1, PVector p2)
+  private void drawLongLineThrough(PVector p1, PVector p2, PVector lastP1, PVector lastP2)
   {
-    float slope = (p1.y - p2.y) / (p1.x - p2.x);
-    int sign = (slope > 0 ? 1 : -1);
-    
-    p1.x -= sign * wingsRegionWidth;
-    p1.y -= sign * wingsRegionWidth * slope;
-    
-    p2.x += sign * wingsRegionWidth;
-    p2.y += sign * wingsRegionWidth * slope;
+    {
+      float slope = (p1.y - p2.y) / (p1.x - p2.x);
+      int sign = (slope > 0 ? 1 : -1);
+      
+      p1.x -= sign * wingsRegionWidth;
+      p1.y -= sign * wingsRegionWidth * slope;
+      
+      p2.x += sign * wingsRegionWidth;
+      p2.y += sign * wingsRegionWidth * slope;
+    }
         
-    line(p2.x, p2.y, p1.x, p1.y);
+    
+    if (lastP1 != null && lastP2 != null) {
+      noStroke();
+      fill(p1.y, 100, 100);
+      
+      float slope = (lastP1.y - lastP2.y) / (lastP1.x - lastP2.x);
+      int sign = (slope > 0 ? 1 : -1);
+      
+      lastP1.x -= sign * wingsRegionWidth;
+      lastP1.y -= sign * wingsRegionWidth * slope;
+      
+      lastP2.x += sign * wingsRegionWidth;
+      lastP2.y += sign * wingsRegionWidth * slope;
+
+      
+      triangle(p2.x, p2.y, p1.x, p1.y, lastP2.x, lastP2.y);
+      triangle(lastP2.x, lastP2.y, lastP1.x, lastP1.y, p1.x, p1.y);
+    } else {
+      stroke(p1.y, 100, 100);
+      line(p2.x, p2.y, p1.x, p1.y);
+    }
   }
 }
 

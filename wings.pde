@@ -8,7 +8,7 @@ PulsePattern pulsePattern;
 BitsPattern bitsPattern;
 FadeParityPattern fadeParityPattern;
 
-boolean FAKE_USER = true;
+boolean FAKE_USER = false;
 
 final int kFingerLengths[] = {64, 64, 64, 64, 64, 64, 64, 64};
 final int kFingerTopCounts[] = {0, 6, 6, 8, 13, 16, 9, 9};
@@ -52,7 +52,7 @@ void setup()
   flyer.kinect = kinect;
   flyer.opc = opc;
   
-  pulsePattern = new PulsePattern(0, 0, wingsRegionWidth, wingsRegionHeight);
+  pulsePattern = new PulsePattern(wingsRegionWidth, wingsRegionHeight);
   bitsPattern = new BitsPattern(wingsRegionWidth, wingsRegionHeight);
   fadeParityPattern = new FadeParityPattern(wingsRegionWidth, wingsRegionHeight);
   
@@ -74,7 +74,7 @@ void draw()
   if (users != null && users.length > 0) {
     boolean positionedUserStillTracked = false;
     for (int i = 0; i < users.length; ++i) {
-      if (users[i] == positionedUserId) {
+      if (users[i] == positionedUserId && kinect.isTrackingSkeleton(users[i]) && userIsInPosition(users[i])) {
         positionedUserStillTracked = true;
         break;
       } 
@@ -82,7 +82,7 @@ void draw()
     if (!positionedUserStillTracked) {
       positionedUserId = -1;
     }
-    if (!positionedUserStillTracked || !kinect.isTrackingSkeleton(positionedUserId) || !userIsInPosition(positionedUserId)) {
+    if (!positionedUserStillTracked) {
       for (int i = 0; i < users.length; ++i) {
         if (kinect.isTrackingSkeleton(users[i]) && userIsInPosition(users[i])) {
           positionedUserId = users[i];
@@ -136,13 +136,14 @@ void draw()
   // Start patterns a second after we stop tracking someone
   if (currentMillis - lastUserSeenMillis > 1000) {
     if (!pulsePattern.isRunning() && !bitsPattern.isRunning() && !fadeParityPattern.isRunning()) {
-      int patternChoice = (int)random(3);
+      int patternChoice = (int)random(4);
       
-      if (patternChoice == 0) {
+      // Twice as likely cause it jankily picks a couple modes
+      if (patternChoice == 0 || patternChoice == 1) {
         pulsePattern.startIfNeeded();
-      } else if (patternChoice == 1) {
-        bitsPattern.startIfNeeded();
       } else if (patternChoice == 2) {
+        bitsPattern.startIfNeeded();
+      } else if (patternChoice == 3) {
         fadeParityPattern.startIfNeeded();
       }
     }
@@ -192,8 +193,10 @@ boolean userIsInPosition(int userID)
   
   PVector centerOfMass = new PVector();
   kinect.getCoM(userID, centerOfMass);
-//  println(centerOfMass); 
-  return true;
+  if (abs(-200 - centerOfMass.x) < 200) {  
+    return true;
+  }
+  return false;
 }
 
 void drawSkeleton(int userId)

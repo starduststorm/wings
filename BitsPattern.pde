@@ -97,8 +97,10 @@ public class BitsPattern
             || (red(bitsColor) < 20 && green(bitsColor) < 20 && blue(bitsColor) < 20));
     }
     if (makeNewBits) {
-      Bit newBit = new Bit(new PVector((int)random(0, displayWidth) + 0.5, (int)random(0, displayHeight)));
-      bits.add(newBit);
+      for (int i = 0; i < 8; ++i) {
+        Bit newBit = new Bit(new PVector((int)random(0, displayWidth) + 0.5, (int)random(0, displayHeight)));
+        bits.add(newBit);
+      }
       lastMakeNewBits = makeNewBits;
     }
     

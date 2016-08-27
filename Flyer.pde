@@ -1,16 +1,14 @@
 import java.util.Random;
 
 int modeCount = 0;
-final int HandElbowLine = modeCount++;
-final int BigAssCircles = modeCount++;
-
-final int UpTheStrands = modeCount++;  // not implemented
+final int HandElbowLine = modeCount++; // doesn't use correct coordinate translation
+final int BigAssCircles = modeCount++; // doesn't use correct coordinate translation
+final int UpTheStrands = modeCount++;  // FIXME: this is the only mode that doesn't suck.
 final int WaveyPatterns = modeCount++; // not interactive yet
 
 final int FlyerModeCount = 2;
  
-final int TEST_MODE = 0;
-
+final int TEST_MODE = UpTheStrands;
 
 private class BezierPath {
   PVector p1, p2;
@@ -26,6 +24,7 @@ public class Flyer {
   
   Random random;
   private int mode;
+  boolean useColor;
   
   PVector lastLeftHand = null;
   PVector lastLeftElbow = null;
@@ -65,18 +64,20 @@ public class Flyer {
   
   public void update()
   {
-    if (userID == -1 && TEST_MODE == 0) {
+    if (userID == -1) {
       lastLeftElbow = null;
       lastLeftHand = null;
       lastRightElbow = null;
       lastRightHand = null;
+      
+      useColor = (int)random(2) == 0;
       return;
     }
-        
+    
     if (TEST_MODE != 0) {
       mode = TEST_MODE;
     } else if (userID != lastUserID) {
-      mode = random.nextInt(FlyerModeCount);       
+      mode = random.nextInt(FlyerModeCount);
     }
     
     // fuck java's switch statement
@@ -107,13 +108,25 @@ public class Flyer {
   
   private void runModeUpTheStrands()
   {
-//    PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
-//    PVector leftElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_ELBOW, false);
-//    PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);
-//    PVector rightElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_ELBOW, true);
+    PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
+    PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);
     
+    colorMode(HSB, 100);
+    noStroke();
+    if (lastLeftHand != null) {
+      float speed = abs(lastLeftHand.x - leftHandPx.x);
+      int hue = (int)(200 * speed);
+      if (useColor) {
+        hue = min(90, hue);
+        fill(hue, 100, 100);
+      } else {
+        fill(0, 0, 100);
+      }
+      rect(0, min(leftHandPx.y, lastLeftHand.y), wingWidth, abs(leftHandPx.y - lastLeftHand.y));
+    }
     
-    
+    lastLeftHand = leftHandPx;
+    lastRightHand = rightHandPx;    
   }
   
   private float contain(float f, float theMax)

@@ -8,6 +8,9 @@ public class PulsePattern {
   int theHue = 0;
   
   int mode;
+  
+  float pos;
+  float velocity;
     
   public PulsePattern(int regionWidth, int regionHeight)
   {
@@ -27,17 +30,27 @@ public class PulsePattern {
     return pulseStart != -1;
   }
   
+  public int fadeRate()
+  {
+    if (mode == 2) {
+      return 10;
+    }
+    return 6;
+  }
+  
   public void startIfNeeded()
   {
     if (pulseStart == -1) {
       pulseStart = millis();
       
-      mode = (int)random(2);
-      theLight = 0;
+      mode = (int)random(3);
+      theHue = (int)random(100);
+      velocity = 0;
+      pos = 0;
     }
   }
   
-  public void update(int userId)
+  public void update(boolean trackingPerson)
   {
     if (pulseStart == -1) {
       return;
@@ -55,19 +68,19 @@ public class PulsePattern {
       for (int x = 0; x < 8; ++x) {
         set(x, theLight, colo);
         if (theLight > wingsRegionHeight) {
-          if (userId != -1) {
+          if (trackingPerson) {
             pulseStart = -1;
           }
           theLight = -1;
         }
       }
       ++theLight;
-    } else {
+    } else if (mode == 1) {
       pushStyle();
       int pulseElapsed = currentMillis - pulseStart;
       float percentComplete = cubicEaseOut(pulseElapsed, 1200.0);
       
-      int pulseY = (int)ceil(percentComplete * regionHeight);
+      int pulseY = (int)ceil(percentComplete * (regionHeight + 1));
       
       colorMode(RGB, 100);
       noSmooth();
@@ -77,14 +90,46 @@ public class PulsePattern {
         line(0, i, regionWidth, i);
       }
       
-      if (pulseElapsed > 1600) {
+      if (pulseElapsed > 1100) {
         // don't start a new pulse if we have a user
-        pulseStart = (userId == -1 ? currentMillis : -1);
+        pulseStart = (trackingPerson ? -1 : currentMillis);
         lastY = 0;
       } else {
         lastY = pulseY;
       }
+    } else {
+      
+      if (velocity < 0 && velocity + 0.1 >= 0) {
+        // don't start a new pulse if we have a user
+        pulseStart = (trackingPerson ? -1 : currentMillis);
+        lastY = 0;
+        theHue = (int)random(100);
+        velocity = 0;
+        pos = 0;
+      }
+      velocity += 0.1;
+      pos += velocity;
+      if (pos > wingsRegionHeight) {
+        velocity *= -1;
+        pos = wingsRegionHeight;
+      }
+      
+      colorMode(HSB, 100);
+      noSmooth();
+      stroke(theHue, 100, 100);
+      for (int i = 0; i < abs(pos - lastY); ++i) {
+        int sign = (pos - lastY > 0 ? -1 : 1);
+        int y = (int)(pos + i * sign);
+        //println("pos = " + pos, ", lastY = " + lastY + ", i = " + i + ", y = " + y);
+        line(0, y, regionWidth, y);
+      }
+      
+      if (pos < 0) {
+
+      } else {
+        lastY = (int)pos;
+      }
     }
+    delay(20);
   }
 }
-

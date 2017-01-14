@@ -80,9 +80,9 @@ public class BitsPattern
     makeNewBits = true;
   }
   
-  public void update(int userId)
+  public void update(boolean trackingPerson)
   {
-    if (userId != -1) {
+    if (trackingPerson) {
       makeNewBits = false;
     }
     
@@ -97,7 +97,7 @@ public class BitsPattern
             || (red(bitsColor) < 20 && green(bitsColor) < 20 && blue(bitsColor) < 20));
     }
     if (makeNewBits) {
-      for (int i = 0; i < 8; ++i) {
+      for (int i = 0; i < 3; ++i) {
         Bit newBit = new Bit(new PVector((int)random(0, displayWidth) + 0.5, (int)random(0, displayHeight)));
         bits.add(newBit);
       }

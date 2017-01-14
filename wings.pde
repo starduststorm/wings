@@ -1,7 +1,7 @@
-import SimpleOpenNI.*;
+import KinectPV2.*;
 
 OPC opc;
-SimpleOpenNI kinect;
+KinectPV2 kinect;
 Flyer flyer;
 
 PulsePattern pulsePattern;
@@ -10,7 +10,6 @@ FadeParityPattern fadeParityPattern;
 
 boolean FAKE_USER = false;
 
-final int kFingerLengths[] = {64, 64, 64, 64, 64, 64, 64, 64};
 final int kFingerTopCounts[] = {0, 6, 6, 8, 13, 16, 9, 9};
 
 final int wingWidth = 8;
@@ -25,20 +24,22 @@ int unmovedFrames = 0;
 int imageWidth;
 int imageHeight;
 
-int positionedUserId = -1;
 int lastUserSeenMillis = -1;
 
 void setup()
 {
   opc = new OPC(this, "127.0.0.1", 7890);
   
-  kinect = new SimpleOpenNI(this);
-  kinect.setMirror(true);
-  kinect.enableDepth();
-  kinect.enableUser();
+  kinect = new KinectPV2(this);   
+  kinect.enableDepthImg(true);   
+  kinect.enableSkeletonDepthMap(true);
+  //kinect.enableSkeleton3DMap(true);
+  kinect.enableBodyTrackImg(true);
+  //kinect.enableInfraredImg(true);
+  kinect.init();
   
-  int depthWidth = kinect.depthWidth();
-  int depthHeight = kinect.depthHeight();
+  int depthWidth = 512;
+  int depthHeight = 424;
   
   if (depthWidth == 0 || depthWidth > 1000 || depthHeight == 0 || depthHeight > 1000) {
     imageWidth = 0;
@@ -57,101 +58,105 @@ void setup()
   fadeParityPattern = new FadeParityPattern(wingsRegionWidth, wingsRegionHeight);
   
   background(0,0,0);
-  size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 
+  //size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 
+  size(528, 424, P3D);
   
   frameRate(60);
   textSize(8);
+}
+
+public PVector coordsForJoint(KJoint joint)
+{
+  return new PVector(joint.getX() / 512.0 * width, joint.getY() / 424 * height);
 }
 
 void draw()
 {
   int currentMillis = millis();
   
-  kinect.update();
-  
-  // Keep the same positionedUserId if possible
-  int[] users = kinect.getUsers();
-  if (users != null && users.length > 0) {
-    boolean positionedUserStillTracked = false;
-    for (int i = 0; i < users.length; ++i) {
-      if (users[i] == positionedUserId && kinect.isTrackingSkeleton(users[i]) && userIsInPosition(users[i])) {
-        positionedUserStillTracked = true;
-        break;
-      } 
-    }
-    if (!positionedUserStillTracked) {
-      positionedUserId = -1;
-    }
-    if (!positionedUserStillTracked) {
-      for (int i = 0; i < users.length; ++i) {
-        if (kinect.isTrackingSkeleton(users[i]) && userIsInPosition(users[i])) {
-          positionedUserId = users[i];
-          break;
-        }
-      }
-    }
-    if (positionedUserId != -1) {
-      lastUserSeenMillis = currentMillis;
-    }
-  } else {
-    positionedUserId = -1;
-  }
-  
-  if (FAKE_USER) {
-    positionedUserId = 0;
-    lastUserSeenMillis = currentMillis;
-  }
-  
-  // Draw infrared image and skeleton
-  PImage depthImage = kinect.depthImage();
+    // Draw infrared image and skeleton
+  PImage depthImage = kinect.getDepthImage();
   if (depthImage != null) {
     blendMode(BLEND);
     pushMatrix();
     translate(wingsRegionWidth, 0, 0);
-    image(kinect.depthImage(), 0, 0);
+    image(depthImage, 0, 0);
     
     stroke(color(255,0,0));
     colorMode(HSB, 100);
     
-    if (positionedUserId != -1) {
-      drawSkeleton(positionedUserId);
-    }
-    
     popMatrix();
   }
   
+  
+  ArrayList<KSkeleton> skeletons = kinect.getSkeletonDepthMap();
+  
+  boolean trackingPerson = false;
+  KSkeleton trackingSkeleton = null;
+  
+  for (KSkeleton skeleton : skeletons) {
+    if (skeleton.isTracked()) {
+      KJoint[] joints = skeleton.getJoints();
+      KJoint head = joints[KinectPV2.JointType_Head];
+      
+      PVector p = coordsForJoint(head);
+      if (!Float.isFinite(p.x) || !Float.isFinite(p.y)) {
+        // Tends to happen as bodies move out of the frame?
+        continue;
+      }
+      if (userIsInPosition(skeleton)) {
+        trackingPerson = true;
+        lastUserSeenMillis = currentMillis;
+        
+        translate(wingsRegionWidth, 0, 0);
+        drawSkeleton(skeleton);
+        translate(-wingsRegionWidth, 0, 0);
+        trackingSkeleton = skeleton;
+        break;
+      }
+    }
+  }
+  
   // Fade out the old patterns
-  int fadeRate = (positionedUserId == -1 ? 6 : 2);
-  colorMode(RGB, 100);
-  blendMode(SUBTRACT);
-  noStroke();
-  fill(fadeRate, fadeRate, fadeRate, 100);
-  rect(0, 0, wingsRegionWidth, wingsRegionHeight);
-    
-  // Draw flyer stuff
-  blendMode(BLEND);
-  flyer.userID = positionedUserId;
-  flyer.update();
+  int fadeRate = (trackingPerson ? 1 : 6);
   
   // Start patterns a second after we stop tracking someone
   if (currentMillis - lastUserSeenMillis > 1000) {
     if (!pulsePattern.isRunning() && !bitsPattern.isRunning() && !fadeParityPattern.isRunning()) {
-      int patternChoice = (int)random(4);
+      int patternChoice = (int)random(5);
       
       // Twice as likely cause it jankily picks a couple modes
-      if (patternChoice == 0 || patternChoice == 1) {
+      if (patternChoice == 0 || patternChoice == 1 || patternChoice == 2) {
         pulsePattern.startIfNeeded();
-      } else if (patternChoice == 2) {
-        bitsPattern.startIfNeeded();
       } else if (patternChoice == 3) {
+        bitsPattern.startIfNeeded();
+      } else if (patternChoice == 4) {
         fadeParityPattern.startIfNeeded();
       }
     }
   }
 
-  pulsePattern.update(positionedUserId); 
-  bitsPattern.update(positionedUserId);
-  fadeParityPattern.update(positionedUserId);
+  
+  colorMode(RGB, 100);
+  blendMode(SUBTRACT);
+  noStroke();
+  fill(fadeRate, fadeRate, fadeRate, 100);
+  //rect(0, 0, wingsRegionWidth, wingsRegionHeight);
+  rect(0, 0, width, height);
+
+  blendMode(BLEND);
+  flyer.skeleton = trackingSkeleton;
+  flyer.update();
+
+    
+  if (FAKE_USER) {
+    trackingPerson = true;
+    lastUserSeenMillis = currentMillis;
+  }
+    
+  pulsePattern.update(trackingPerson); 
+  bitsPattern.update(trackingPerson);
+  fadeParityPattern.update(trackingPerson);
   
   // Write pixels
   for (int x = 0; x < wingsRegionWidth; ++x) {
@@ -171,65 +176,95 @@ void draw()
   text(String.format("%.1f", frameRate), 0, height - 10);
 }
 
-boolean userIsInPosition(int userID)
+boolean userIsInPosition(KSkeleton skel)
 {
-  // Hasn't moved in a while? Probably gone.
-  // The kinect lib likes to keep a bogus frame around for a while, unmoving, at the edge of the frame.
+  //PVector newLeftHandPos = new PVector();
+  //PVector newRightHandPos = new PVector();
+  //kinect.getJointPositionSkeleton(userID, SimpleOpenNI.SKEL_LEFT_HAND, newLeftHandPos);
+  //kinect.getJointPositionSkeleton(userID, SimpleOpenNI.SKEL_RIGHT_HAND, newRightHandPos);
   
-  PVector newLeftHandPos = new PVector();
-  PVector newRightHandPos = new PVector();
-  kinect.getJointPositionSkeleton(userID, SimpleOpenNI.SKEL_LEFT_HAND, newLeftHandPos);
-  kinect.getJointPositionSkeleton(userID, SimpleOpenNI.SKEL_RIGHT_HAND, newRightHandPos);
+  //if (newLeftHandPos.x == leftHandPosition.x && newLeftHandPos.y == leftHandPosition.y &&
+  //    newRightHandPos.x == rightHandPosition.x && newRightHandPos.y == rightHandPosition.y) {
+  //  unmovedFrames++;
+  //  if (unmovedFrames > 30) {
+  //    return false;
+  //  }
+  //}
+  //leftHandPosition = newLeftHandPos;
+  //rightHandPosition = newRightHandPos;
   
-  if (newLeftHandPos.x == leftHandPosition.x && newLeftHandPos.y == leftHandPosition.y &&
-      newRightHandPos.x == rightHandPosition.x && newRightHandPos.y == rightHandPosition.y) {
-    unmovedFrames++;
-    if (unmovedFrames > 30) {
-      return false;
-    }
-  }
-  leftHandPosition = newLeftHandPos;
-  rightHandPosition = newRightHandPos;
-  
-  PVector centerOfMass = new PVector();
-  kinect.getCoM(userID, centerOfMass);
-  if (abs(-200 - centerOfMass.x) < 200) {  
+  KJoint[] joints = skel.getJoints();
+  KJoint head = joints[KinectPV2.JointType_Head];
+  PVector p = coordsForJoint(head);
+  //println("Head pos = " + p);
+  if (abs(p.x - 260) < 60) {  
     return true;
   }
   return false;
 }
 
-void drawSkeleton(int userId)
+void drawSkeleton(KSkeleton skel)
 {
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_HEAD, SimpleOpenNI.SKEL_NECK);
-  
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_NECK, SimpleOpenNI.SKEL_LEFT_SHOULDER);
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_LEFT_SHOULDER, SimpleOpenNI.SKEL_LEFT_ELBOW);
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_LEFT_ELBOW, SimpleOpenNI.SKEL_LEFT_HAND);
-  
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_NECK, SimpleOpenNI.SKEL_RIGHT_SHOULDER);
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_RIGHT_SHOULDER, SimpleOpenNI.SKEL_RIGHT_ELBOW);
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_RIGHT_ELBOW, SimpleOpenNI.SKEL_RIGHT_HAND);
-  
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_NECK, SimpleOpenNI.SKEL_TORSO);
-  
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_TORSO, SimpleOpenNI.SKEL_LEFT_HIP);
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_LEFT_HIP, SimpleOpenNI.SKEL_LEFT_KNEE);
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_LEFT_KNEE, SimpleOpenNI.SKEL_LEFT_FOOT);
-  
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_TORSO, SimpleOpenNI.SKEL_RIGHT_HIP);
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_RIGHT_HIP, SimpleOpenNI.SKEL_RIGHT_KNEE);
-  kinect.drawLimb(userId, SimpleOpenNI.SKEL_RIGHT_KNEE, SimpleOpenNI.SKEL_RIGHT_FOOT);
+  KJoint joints[] = skel.getJoints();
+  drawBone(joints, KinectPV2.JointType_Head, KinectPV2.JointType_Neck);
+  drawBone(joints, KinectPV2.JointType_Neck, KinectPV2.JointType_SpineShoulder);
+  drawBone(joints, KinectPV2.JointType_SpineShoulder, KinectPV2.JointType_SpineMid);
+  drawBone(joints, KinectPV2.JointType_SpineMid, KinectPV2.JointType_SpineBase);
+  drawBone(joints, KinectPV2.JointType_SpineShoulder, KinectPV2.JointType_ShoulderRight);
+  drawBone(joints, KinectPV2.JointType_SpineShoulder, KinectPV2.JointType_ShoulderLeft);
+  drawBone(joints, KinectPV2.JointType_SpineBase, KinectPV2.JointType_HipRight);
+  drawBone(joints, KinectPV2.JointType_SpineBase, KinectPV2.JointType_HipLeft);
+
+  // Right Arm
+  drawBone(joints, KinectPV2.JointType_ShoulderRight, KinectPV2.JointType_ElbowRight);
+  drawBone(joints, KinectPV2.JointType_ElbowRight, KinectPV2.JointType_WristRight);
+  drawBone(joints, KinectPV2.JointType_WristRight, KinectPV2.JointType_HandRight);
+  drawBone(joints, KinectPV2.JointType_HandRight, KinectPV2.JointType_HandTipRight);
+  drawBone(joints, KinectPV2.JointType_WristRight, KinectPV2.JointType_ThumbRight);
+
+  // Left Arm
+  drawBone(joints, KinectPV2.JointType_ShoulderLeft, KinectPV2.JointType_ElbowLeft);
+  drawBone(joints, KinectPV2.JointType_ElbowLeft, KinectPV2.JointType_WristLeft);
+  drawBone(joints, KinectPV2.JointType_WristLeft, KinectPV2.JointType_HandLeft);
+  drawBone(joints, KinectPV2.JointType_HandLeft, KinectPV2.JointType_HandTipLeft);
+  drawBone(joints, KinectPV2.JointType_WristLeft, KinectPV2.JointType_ThumbLeft);
+
+  // Right Leg
+  drawBone(joints, KinectPV2.JointType_HipRight, KinectPV2.JointType_KneeRight);
+  drawBone(joints, KinectPV2.JointType_KneeRight, KinectPV2.JointType_AnkleRight);
+  drawBone(joints, KinectPV2.JointType_AnkleRight, KinectPV2.JointType_FootRight);
+
+  // Left Leg
+  drawBone(joints, KinectPV2.JointType_HipLeft, KinectPV2.JointType_KneeLeft);
+  drawBone(joints, KinectPV2.JointType_KneeLeft, KinectPV2.JointType_AnkleLeft);
+  drawBone(joints, KinectPV2.JointType_AnkleLeft, KinectPV2.JointType_FootLeft);
+
+  //drawJoint(joints, KinectPV2.JointType_HandTipLeft);
+  //drawJoint(joints, KinectPV2.JointType_HandTipRight);
+  //drawJoint(joints, KinectPV2.JointType_FootLeft);
+  //drawJoint(joints, KinectPV2.JointType_FootRight);
+
+  //drawJoint(joints, KinectPV2.JointType_ThumbLeft);
+  //drawJoint(joints, KinectPV2.JointType_ThumbRight);
+
+  //drawJoint(joints, KinectPV2.JointType_Head);
 }
 
-void onNewUser(SimpleOpenNI context, int userId)
-{
-  println("User " + userId + " appeared!");  
-  context.startTrackingSkeleton(userId);
-}
+////draw joint
+//void drawJoint(KJoint[] joints, int jointType)
+//{
+//  pushMatrix();
+//  translate(joints[jointType].getX(), joints[jointType].getY(), joints[jointType].getZ());
+//  ellipse(0, 0, 25, 25);
+//  popMatrix();
+//}
 
-void onLostUser(SimpleOpenNI curContext, int userId)
+//draw bone
+void drawBone(KJoint[] joints, int jointType1, int jointType2)
 {
-  println("User " + userId + " disappeared!");
+  //pushMatrix();
+  //translate(joints[jointType1].getX(), joints[jointType1].getY(), joints[jointType1].getZ());
+  //ellipse(0, 0, 25, 25);
+  //popMatrix();
+  line(joints[jointType1].getX(), joints[jointType1].getY(), joints[jointType1].getZ(), joints[jointType2].getX(), joints[jointType2].getY(), joints[jointType2].getZ());
 }
-

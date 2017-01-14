@@ -8,7 +8,7 @@ final int WaveyPatterns = modeCount++; // not interactive yet
 
 final int FlyerModeCount = 2;
  
-final int TEST_MODE = UpTheStrands;
+final int TEST_MODE = BigAssCircles;
 
 private class BezierPath {
   PVector p1, p2;
@@ -17,9 +17,8 @@ private class BezierPath {
 }
 
 public class Flyer {
-  public int userID;
-  public int lastUserID;
-  public SimpleOpenNI kinect;
+  public KinectPV2 kinect;
+  public KSkeleton skeleton;
   public OPC opc;
   
   Random random;
@@ -43,28 +42,33 @@ public class Flyer {
     beziers = new ArrayList<BezierPath>();
   }
   
-  private PVector screenPositionForJoint(int joint)
-  {
-    PVector jointPos3D = new PVector();
-    kinect.getJointPositionSkeleton(userID, joint, jointPos3D);
+  //private PVector screenPositionForJoint(int joint)
+  //{
+  //  PVector jointPos3D = new PVector();
+  //  kinect.getJointPositionSkeleton(userID, joint, jointPos3D);
     
-    PVector jointPos = new PVector();
-    kinect.convertRealWorldToProjective(jointPos3D, jointPos);
-    return jointPos;    
+  //  PVector jointPos = new PVector();
+  //  kinect.convertRealWorldToProjective(jointPos3D, jointPos);
+  //  return jointPos;    
+  //}
+  
+  public PVector coordsForJoint(KJoint joint)
+  {
+    return new PVector(joint.getX() / 512.0 * width, joint.getY() / 424 * height);
   }
   
-  private PVector wingPositionForJoint(int joint, boolean isRight)
+  private PVector wingPositionForJoint(KJoint joint, boolean isRight)
   {
-    PVector jointPx = screenPositionForJoint(joint);
+    PVector jointPx = this.coordsForJoint(joint);
     PVector wingPos = new PVector();
     wingPos.x = (jointPx.x * wingWidth / imageWidth) + (isRight ? wingWidth : 0.0);
-    wingPos.y = (jointPx.y * wingHeight / imageHeight); 
+    wingPos.y = (jointPx.y * wingHeight / imageHeight);
     return wingPos;
   }
   
   public void update()
   {
-    if (userID == -1) {
+    if (this.skeleton == null) {
       lastLeftElbow = null;
       lastLeftHand = null;
       lastRightElbow = null;
@@ -73,10 +77,10 @@ public class Flyer {
       useColor = (int)random(2) == 0;
       return;
     }
-    
+      
     if (TEST_MODE != 0) {
       mode = TEST_MODE;
-    } else if (userID != lastUserID) {
+    } else if (this.skeleton != null) {
       mode = random.nextInt(FlyerModeCount);
     }
     
@@ -87,20 +91,19 @@ public class Flyer {
       runModeBigAssCircles();
     } else if (mode == UpTheStrands) {
       runModeUpTheStrands();
-    } else if (mode == WaveyPatterns) {
-      runModeWaveyPatterns();
+    //} else if (mode == WaveyPatterns) {
+    //  runModeWaveyPatterns();
     }
-    
-    lastUserID = userID;
   }
   
   private void runModeBigAssCircles()
   {
-    PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
-    PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);
+    KJoint[] joints = this.skeleton.getJoints();
+    PVector leftHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandLeft], false);
+    PVector rightHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandRight], true);
     
     colorMode(HSB, 100);
-    fill(0, 0, 100);
+    fill(50, 0, 100);
     noStroke();
     ellipse(leftHandPx.x, leftHandPx.y, 4, 20);
     ellipse(rightHandPx.x, rightHandPx.y, 4, 20);
@@ -108,8 +111,9 @@ public class Flyer {
   
   private void runModeUpTheStrands()
   {
-    PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
-    PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);
+    KJoint[] joints = this.skeleton.getJoints();
+    PVector leftHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandLeft], false);
+    PVector rightHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandRight], true);
     
     colorMode(HSB, 100);
     noStroke();
@@ -140,72 +144,73 @@ public class Flyer {
     return f;
   }
   
-  private void runModeWaveyPatterns()
-  {
-    final int segmentCount = 30;
+  //private void runModeWaveyPatterns()
+  //{
+  //  final int segmentCount = 30;
     
-    colorMode(HSB, 100);
+  //  colorMode(HSB, 100);
     
-    if (userID != lastUserID || beziers.size() == 0) {
-      for (int i = 0; i < segmentCount; ++i) {
-        BezierPath path = new BezierPath();
-        path.p1 = new PVector(random.nextInt(wingsRegionWidth), random.nextInt(wingsRegionHeight));
-        path.p2 = new PVector(random.nextInt(wingsRegionWidth), random.nextInt(wingsRegionHeight));
-        path.c1 = new PVector(path.p1.x + random.nextInt(10) - 5,
-                              path.p1.y + random.nextInt(10) - 5);
-        path.c2 = new PVector(path.p2.x + random.nextInt(10) - 5,
-                              path.p2.y + random.nextInt(10) - 5);
+  //  if (userID != lastUserID || beziers.size() == 0) {
+  //    for (int i = 0; i < segmentCount; ++i) {
+  //      BezierPath path = new BezierPath();
+  //      path.p1 = new PVector(random.nextInt(wingsRegionWidth), random.nextInt(wingsRegionHeight));
+  //      path.p2 = new PVector(random.nextInt(wingsRegionWidth), random.nextInt(wingsRegionHeight));
+  //      path.c1 = new PVector(path.p1.x + random.nextInt(10) - 5,
+  //                            path.p1.y + random.nextInt(10) - 5);
+  //      path.c2 = new PVector(path.p2.x + random.nextInt(10) - 5,
+  //                            path.p2.y + random.nextInt(10) - 5);
 
-        path.col = color(random(100), random(30) + 70, 100);                               
-        beziers.add(path);
-      }
-    }
+  //      path.col = color(random(100), random(30) + 70, 100);                               
+  //      beziers.add(path);
+  //    }
+  //  }
     
-    for (int i = 0; i < beziers.size(); ++i) {
-      BezierPath path = beziers.get(i);
-      path.p1.x = contain(path.p1.x + random(2) - 1.0, wingsRegionWidth);
-      path.p1.y = contain(path.p1.y + random(2) - 1.0, wingsRegionHeight);
-      path.p2.x = contain(path.p2.x + random(2) - 1.0, wingsRegionWidth);
-      path.p2.y = contain(path.p2.y + random(2) - 1.0, wingsRegionHeight);
-      path.c1.x = path.c1.x + random(4) - 2.0;
-      path.c1.y = path.c1.y + random(4) - 2.0;
-      path.c2.x = path.c2.x + random(4) - 2.0;
-      path.c2.y = path.c2.y + random(4) - 2.0;
-    }
+  //  for (int i = 0; i < beziers.size(); ++i) {
+  //    BezierPath path = beziers.get(i);
+  //    path.p1.x = contain(path.p1.x + random(2) - 1.0, wingsRegionWidth);
+  //    path.p1.y = contain(path.p1.y + random(2) - 1.0, wingsRegionHeight);
+  //    path.p2.x = contain(path.p2.x + random(2) - 1.0, wingsRegionWidth);
+  //    path.p2.y = contain(path.p2.y + random(2) - 1.0, wingsRegionHeight);
+  //    path.c1.x = path.c1.x + random(4) - 2.0;
+  //    path.c1.y = path.c1.y + random(4) - 2.0;
+  //    path.c2.x = path.c2.x + random(4) - 2.0;
+  //    path.c2.y = path.c2.y + random(4) - 2.0;
+  //  }
     
-    // bezier(x1, y1, x2, y2, x3, y3, x4, y4)
-    // bezierPoint(p1, c1, c2, p2, t)   p == point, c == control
+  //  // bezier(x1, y1, x2, y2, x3, y3, x4, y4)
+  //  // bezierPoint(p1, c1, c2, p2, t)   p == point, c == control
     
-    noFill();
+  //  noFill();
     
-    PVector lastPoint = null;
-    for (int i = 0; i < beziers.size(); ++i) {
-      BezierPath path = beziers.get(i);
-      stroke(path.col);
-      float x = bezierPoint(path.p1.x, path.c1.x, path.c1.y, path.p1.y, i / (float)segmentCount);
-      float y = bezierPoint(path.p2.x, path.c2.x, path.c2.y, path.p2.y, i / (float)segmentCount);
+  //  PVector lastPoint = null;
+  //  for (int i = 0; i < beziers.size(); ++i) {
+  //    BezierPath path = beziers.get(i);
+  //    stroke(path.col);
+  //    float x = bezierPoint(path.p1.x, path.c1.x, path.c1.y, path.p1.y, i / (float)segmentCount);
+  //    float y = bezierPoint(path.p2.x, path.c2.x, path.c2.y, path.p2.y, i / (float)segmentCount);
       
-      println("x = ", x, ", y = ", y);
+  //    println("x = ", x, ", y = ", y);
       
-//      stroke(10, 255, 50);
-//      x = random.nextInt(wingsRegionWidth);
-//      y = random.nextInt(wingsRegionHeight);
+////      stroke(10, 255, 50);
+////      x = random.nextInt(wingsRegionWidth);
+////      y = random.nextInt(wingsRegionHeight);
       
-      if (lastPoint != null) {
-        line(lastPoint.x, lastPoint.y, x, y);
-        lastPoint = null;
-      } else {
-        lastPoint = new PVector(x, y);
-      }
-    }
-  }
+  //    if (lastPoint != null) {
+  //      line(lastPoint.x, lastPoint.y, x, y);
+  //      lastPoint = null;
+  //    } else {
+  //      lastPoint = new PVector(x, y);
+  //    }
+  //  }
+  //}
   
   private void runModeHandElbowLine()
   {
-    PVector leftHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_HAND, false);
-    PVector leftElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_LEFT_ELBOW, false);
-    PVector rightHandPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_HAND, true);
-    PVector rightElbowPx = wingPositionForJoint(SimpleOpenNI.SKEL_RIGHT_ELBOW, true);
+    KJoint[] joints = skeleton.getJoints();
+    PVector leftHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandLeft], false);
+    PVector leftElbowPx = wingPositionForJoint(joints[KinectPV2.JointType_ElbowLeft], false);
+    PVector rightHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandRight], true);
+    PVector rightElbowPx = wingPositionForJoint(joints[KinectPV2.JointType_ElbowRight], true);
     
     leftHandPx.x += wingWidth;
     leftElbowPx.x += wingWidth;

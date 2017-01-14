@@ -43,7 +43,7 @@ class FadeParityPattern {
     } while (abs(hue(c1) - hue(c2)) < 10 || abs(hue(c1) - hue(c2)) > 90);  
   }
   
-  public void update(int userId)
+  public void update(boolean trackingPerson)
   {
     if (startMillis == -1) {
       return;
@@ -51,7 +51,7 @@ class FadeParityPattern {
     final float lerpDuration = 3000.0;
     
     int currentMillis = millis();
-    if (userId != -1 && fadeOutStart == -1) {
+    if (trackingPerson && fadeOutStart == -1) {
       fadeOutStart = currentMillis;
     }
     
@@ -81,7 +81,7 @@ class FadeParityPattern {
     color lerpc2 = lerpColor(oldc2, c2, lerpRunningMillis / lerpDuration);
 
     pushStyle();
-    noSmooth();
+    //noSmooth();
     for (int w = 0; w < displayWidth; ++w) {
       for (int h = 0; h < displayHeight; ++h) {
         color lerpc = (h % 2 == 0 ? lerpc1 : lerpc2);
@@ -92,4 +92,3 @@ class FadeParityPattern {
     popStyle();
   }
 }
-

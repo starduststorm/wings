@@ -1,35 +1,22 @@
-class FadeParityPattern {
-  int displayWidth;
-  int displayHeight;
+class FadeParityPattern extends IdlePattern {
   
-  int startMillis = -1;
   int lerpStartMillis = -1;
-  int fadeOutStart = -1;
   
   color c1, c2;
   color oldc1, oldc2;
   
   public FadeParityPattern(int displayWidth, int displayHeight)
   {
-    this.displayWidth = displayWidth;
-    this.displayHeight = displayHeight;
+    super(displayWidth, displayHeight);
   }
   
-  public boolean isRunning()
+  public void startPattern()
   {
-    return (startMillis != -1);
-  }
-  
-  public void startIfNeeded()
-  {
-    if (startMillis == -1) {
-      startMillis = millis();
-      lerpStartMillis = millis();
-      fadeOutStart = -1;
-      newColors();
-      oldc1 = #000000;
-      oldc2 = #000000;
-    }
+    super.startPattern();
+    lerpStartMillis = millis();
+    newColors();
+    oldc1 = #000000;
+    oldc2 = #000000;
   }
   
   private void newColors()
@@ -43,17 +30,11 @@ class FadeParityPattern {
     } while (abs(hue(c1) - hue(c2)) < 10 || abs(hue(c1) - hue(c2)) > 90);  
   }
   
-  public void update(boolean trackingPerson)
+  public void update()
   {
-    if (startMillis == -1) {
-      return;
-    }
     final float lerpDuration = 3000.0;
     
     int currentMillis = millis();
-    if (trackingPerson && fadeOutStart == -1) {
-      fadeOutStart = currentMillis;
-    }
     
     int runningMillis = currentMillis - startMillis;
     int lerpRunningMillis = currentMillis - lerpStartMillis; 
@@ -64,10 +45,10 @@ class FadeParityPattern {
     }
     
     float alpha = 1.0;
-    if (fadeOutStart != -1) {
-      float fadeMulti = (currentMillis - fadeOutStart) / 2000.0;
+    if (this.isStopping()) {
+      float fadeMulti = (currentMillis - this.stopMillis) / 2000.0;
       if (fadeMulti >= 1.0) {
-        startMillis = -1;
+        this.stopCompleted();
       }
       alpha = 1.0 - fadeMulti;
     } else if (runningMillis < 3000) {

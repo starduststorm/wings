@@ -1,6 +1,5 @@
 import java.util.*;
 
-
 Random rand = new Random();
 
 private int randomSign()
@@ -43,67 +42,41 @@ private class Bit
   
   public void drift()
   {
-        //println("pos = " + pos);
-        //println("direction = " + direction);
     pos.add(direction);
-        //println("after add, pos = " + pos);
   }
 }
 
-public class BitsPattern
-{
+public class BitsPattern extends IdlePattern {
   LinkedList<Bit> bits;
-  boolean lastMakeNewBits;
   color bitsColor;
-  
-  boolean makeNewBits = false;
-  
-  int displayWidth;
-  int displayHeight;
   
   public BitsPattern(int displayWidth, int displayHeight)
   {
+    super(displayWidth, displayHeight);
     bits = new LinkedList<Bit>();
-    lastMakeNewBits = false;
-    
-    this.displayWidth = displayWidth;
-    this.displayHeight = displayHeight;
   }
   
-  public boolean isRunning()
+  public void startPattern()
   {
-    return makeNewBits;
+    super.startPattern();
+    colorMode(RGB, 100);
+    // bits re-appearing, get a new color
+    color[] colors = {color(5,70,5), color(70, 5, 5), color(5, 5, 70)};
+    bitsColor = colors[(int)random(colors.length)];
+    do {
+      bitsColor = color((int)random(100),(int)random(100),(int)random(100));
+    } while ((red(bitsColor) > 8 && green(bitsColor) > 8 && blue(bitsColor) > 8)
+          || (red(bitsColor) < 20 && green(bitsColor) < 20 && blue(bitsColor) < 20));
   }
   
-  public void startIfNeeded()
+  public void update()
   {
-    makeNewBits = true;
-  }
-  
-  public void update(boolean trackingPerson)
-  {
-    if (trackingPerson) {
-      makeNewBits = false;
-    }
-    
-    if (makeNewBits && !lastMakeNewBits) {
-      colorMode(RGB, 100);
-      // bits re-appearing, get a new color
-      color[] colors = {color(5,70,5), color(70, 5, 5), color(5, 5, 70)};
-      bitsColor = colors[(int)random(colors.length)];
-      do {
-        bitsColor = color((int)random(100),(int)random(100),(int)random(100));
-      } while ((red(bitsColor) > 8 && green(bitsColor) > 8 && blue(bitsColor) > 8)
-            || (red(bitsColor) < 20 && green(bitsColor) < 20 && blue(bitsColor) < 20));
-    }
-    if (makeNewBits) {
+    if (this.isRunning()) {
       for (int i = 0; i < 3; ++i) {
         Bit newBit = new Bit(new PVector((int)random(0, displayWidth) + 0.5, (int)random(0, displayHeight)));
         bits.add(newBit);
       }
-      lastMakeNewBits = makeNewBits;
     }
-    
     draw();
   }
   
@@ -124,6 +97,9 @@ public class BitsPattern
       } else {
         bit.drift();
       }
+    }
+    if (this.isStopping() && bits.size() == 0) {
+      this.stopCompleted();
     }
   }
 }

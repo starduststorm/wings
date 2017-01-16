@@ -1,8 +1,8 @@
 import java.util.Random;
 
 int modeCount = 0;
-final int BigAssCircles = modeCount++;
-final int UpTheStrands = modeCount++;
+final int BigAssCircles = ++modeCount;
+final int UpTheStrands = ++modeCount;
 //final int UpTheStrands = modeCount++;
 
 final int HandElbowLine = 0;//modeCount++; // doesn't use correct coordinate translation
@@ -10,9 +10,9 @@ final int WaveyPatterns = 0;//modeCount++; // not interactive yet
 
 final int FlyerModeCount = 2;
  
-final int TEST_MODE = UpTheStrands;
+final int TEST_MODE = BigAssCircles;
 
-private float mod(float f, int m)
+public float mod(float f, int m)
 {
   f = f % m;
   while (f < 0) {
@@ -110,11 +110,10 @@ public class Flyer {
     //  runModeWaveyPatterns();
     }
     
-    KJoint[] joints = this.skeleton.getJoints();
-    int leftHandState = joints[KinectPV2.JointType_HandLeft].getState();
-    if (leftHandState == KinectPV2.HandState_Lasso) {
-    }
-    
+    //KJoint[] joints = this.skeleton.getJoints();
+    //int leftHandState = joints[KinectPV2.JointType_HandLeft].getState();
+    //if (leftHandState == KinectPV2.HandState_Lasso) {
+    //}
     
     // KinectPV2.HandState_Open
   }
@@ -132,7 +131,7 @@ public class Flyer {
     PVector rightHandPx = wingPositionForJoint(rightHand, true);
     
     colorMode(HSB, 100);
-    noStroke();
+    noFill();
     for (int r = 0; r < 60; ++r) {
       stroke((leftHue + 50 + 1 * r) % 100, 100, 100);
       ellipse(leftHandPx.x, leftHandPx.y, 4, r);

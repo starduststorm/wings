@@ -60,7 +60,7 @@ void setup()
   idlePatterns.add(new PulsePattern(PulsePatternType.Bounce, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new BitsPattern(wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new FadeParityPattern(wingsRegionWidth, wingsRegionHeight));
-  //idlePatterns.add(new ChevronsPattern(wingsRegionWidth, wingsRegionHeight));
+  idlePatterns.add(new ChevronsPattern(wingsRegionWidth, wingsRegionHeight));
   
   background(0,0,0);
   //size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 
@@ -173,7 +173,7 @@ void draw()
   for (int x = 0; x < wingsRegionWidth; ++x) {
     for (int y = 0; y < wingsRegionHeight; ++y) {
       color c = get(x, y);
-      opc.setPixel(y + wingsRegionHeight * x, c);
+      opc.setPixel(y + wingsRegionHeight * (x < wingWidth ? wingWidth - x - 1 : x), c);
     }
   }
   opc.writePixels();

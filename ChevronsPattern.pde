@@ -1,24 +1,43 @@
+public color lerpColorMod(color c1, color c2, float amt)
+{
+  pushStyle();
+  colorMode(HSB, 100);
+  amt = max(0.0, min(1.0, amt));
+  float h1 = hue(c1), h2 = hue(c2);
+  float s1 = saturation(c1), s2 = saturation(c2);
+  float b1 = brightness(c1), b2 = brightness(c2);
+  if (h1 > h2) {
+    // loop hue around % 100, so lerpColorMod(color(90, 100, 100), color(0, 100, 100), 0.5) == color(95, 100, 100)
+    h2 += 100;
+  }
+  float h = lerp(h1, h2, amt);
+  float s = lerp(s1, s2, amt);
+  float b = lerp(b1, b2, amt);
+  color c = color(h % 100, s, b);
+  popStyle();
+  return c;
+}
+
 public class ChevronsPattern extends IdlePattern {
   float leadingEdge;
-  float leadingHue;
+  float leadingValue;
+  boolean useColor;
   
-  public ChevronsPattern(int displayWidth, int displayHeight)
+  public ChevronsPattern(int displayWidth, int displayHeight, boolean useColor)
   {
     super(displayWidth, displayHeight);
+    this.useColor = useColor;
   }
   
   public void startPattern()
   {
     super.startPattern();
     leadingEdge = 0;
-    leadingHue = (int)random(100);
+    leadingValue = (int)random(100);
   }
   
-  private void lineGradient(float x1, float y1, float x2, float y2, int hue1, int hue2)
+  private void lineGradient(float x1, float y1, float x2, float y2, color c1, color c2)
   {
-    if (hue2 < hue1) {
-      hue2 += 100;
-    }
     int mils = millis();
     float alpha = (mils - startMillis < 2000 ? 100 * (mils - startMillis) / 2000 : 100);
     colorMode(HSB, 100);
@@ -31,8 +50,8 @@ public class ChevronsPattern extends IdlePattern {
       // Draw "segments", not points
       float x = x1 + i * (x2 - x1) / segments;
       float y = y1 + i * (y2 - y1) / segments;
-      int hue = (hue1 + i * (hue2 - hue1) / segments) % 100;
-      stroke(hue, 100, 100, alpha);
+      color c = lerpColorMod(c1, c2, i / (float)segments);
+      stroke(c, alpha);
       line(lastX, lastY, x, y);
       lastX = x;
       lastY = y;
@@ -41,31 +60,38 @@ public class ChevronsPattern extends IdlePattern {
   
   public void update()
   {
-    //colorMode(HSB, 100);
-    // FIXME: gradients are not quite right
-    // Also, have modes where we go from white/color to black
-    
+    colorMode(HSB, 100);
     for (int i = 0 ; i < wingWidth * 2; ++i) {
       float chevronVertex = i;
-      int startHue = (int)(leadingHue + 5 * i);
-      int endHue = (int)(startHue + 40);
+      color startColor, endColor;
+      if (useColor) {
+        startColor = color((leadingValue + 5 * i) % 100, 100, 100);
+        endColor = color((hue(startColor) + 40) % 100, 100, 100);
+      } else {
+        startColor = color(0, 0, 50 * sin(leadingValue + i) + 50);
+        endColor = color(0, 0, 0);
+      }
       
       clip(0, 0, wingWidth, displayHeight);
       lineGradient(wingWidth - chevronVertex, displayHeight / 2.0, wingWidth - chevronVertex + 4, 0, 
-                  (int)leadingHue, endHue);
+                  startColor, endColor);
       lineGradient(wingWidth - chevronVertex, displayHeight / 2.0, wingWidth - chevronVertex + 4, displayHeight, 
-                  (int)leadingHue, endHue);
+                  startColor, endColor);
       noClip();
       
       clip(wingWidth, 0, wingWidth, displayHeight);
       lineGradient(wingWidth + chevronVertex, displayHeight / 2.0, wingWidth + chevronVertex - 4, 0, 
-                  (int)leadingHue, endHue);
+                  startColor, endColor);
       lineGradient(wingWidth + chevronVertex, displayHeight / 2.0, wingWidth + chevronVertex - 4, displayHeight,
-                  (int)leadingHue, endHue);
+                  startColor, endColor);
       noClip();
     }
     
-    leadingHue = mod(leadingHue - 1, 100);
+    if (useColor) {
+      leadingValue = mod(leadingValue - 1, 100);
+    } else {
+      leadingValue -= 0.1;
+    }
     
     leadingEdge = (leadingEdge + 0.1);
     if (leadingEdge > wingWidth) {

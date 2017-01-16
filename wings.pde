@@ -84,6 +84,9 @@ void draw()
     blendMode(BLEND);
     pushMatrix();
     translate(wingsRegionWidth, 0, 0);
+    fill(0, 0, 0);
+    rect(0, 0, width - wingsRegionWidth, height);
+
     image(depthImage, 0, 0);
     
     stroke(color(255,0,0));
@@ -110,6 +113,7 @@ void draw()
         // Tends to happen as bodies move out of the frame?
         continue;
       }
+      println("Checking skeleton: " + skeleton);
       if (userIsInPosition(skeleton)) {
         trackingPerson = true;
         lastUserSeenMillis = currentMillis;
@@ -135,7 +139,7 @@ void draw()
   noStroke();
   fill(fadeRate, fadeRate, fadeRate, 100);
   //rect(0, 0, wingsRegionWidth, wingsRegionHeight);
-  rect(0, 0, width, height);
+  rect(0, 0, wingsRegionWidth, wingsRegionHeight);
      
      
   // Start patterns a second after we stop tracking someone
@@ -148,17 +152,19 @@ void draw()
   }
   
   blendMode(BLEND);
-  flyer.skeleton = trackingSkeleton;
-  flyer.update();
   
   // Update or stop patterns
   for (IdlePattern pattern : idlePatterns) {
-    if (!wasTrackingPerson && trackingPerson) {
+    if (!wasTrackingPerson && trackingPerson && pattern.isRunning()) {
       pattern.lazyStop();
+      activeIdlePattern = null;
     } else if (pattern.isRunning() || pattern.isStopping()) {
       pattern.update();
     }
   }
+  
+  flyer.skeleton = trackingSkeleton;
+  flyer.update();
   
   // Write pixels
   for (int x = 0; x < wingsRegionWidth; ++x) {

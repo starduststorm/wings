@@ -60,6 +60,7 @@ void setup()
   idlePatterns.add(new PulsePattern(PulsePatternType.Bounce, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new BitsPattern(wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new FadeParityPattern(wingsRegionWidth, wingsRegionHeight));
+  //idlePatterns.add(new ChevronsPattern(wingsRegionWidth, wingsRegionHeight));
   
   background(0,0,0);
   //size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 
@@ -85,6 +86,7 @@ void draw()
     pushMatrix();
     translate(wingsRegionWidth, 0, 0);
     fill(0, 0, 0);
+    noStroke();
     rect(0, 0, width - wingsRegionWidth, height);
 
     image(depthImage, 0, 0);
@@ -113,7 +115,6 @@ void draw()
         // Tends to happen as bodies move out of the frame?
         continue;
       }
-      println("Checking skeleton: " + skeleton);
       if (userIsInPosition(skeleton)) {
         trackingPerson = true;
         lastUserSeenMillis = currentMillis;
@@ -132,8 +133,10 @@ void draw()
     lastUserSeenMillis = currentMillis;
   }
   
+  boolean beenAWhile = currentMillis - lastUserSeenMillis > 1000;
+  
   // Fade out the old patterns
-  int fadeRate = (trackingPerson ? 1 : 6);
+  int fadeRate = (beenAWhile ? 6 : 2);
   colorMode(RGB, 100);
   blendMode(SUBTRACT);
   noStroke();

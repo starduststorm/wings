@@ -63,7 +63,7 @@ public class PulsePattern extends IdlePattern {
       blendMode(BLEND);
       colorMode(HSB, 100);
       color colo = color((theHue++ % 100), 100, 100);
-      for (int x = 0; x < 8; ++x) {
+      for (int x = 0; x < displayWidth; ++x) {
         set(x, theLight, colo);
         if (theLight > wingsRegionHeight) {
           if (this.isStopping()) {

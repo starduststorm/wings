@@ -1,14 +1,25 @@
 import java.util.Random;
 
 int modeCount = 0;
-final int HandElbowLine = modeCount++; // doesn't use correct coordinate translation
-final int BigAssCircles = modeCount++; // doesn't use correct coordinate translation
-final int UpTheStrands = modeCount++;  // FIXME: this is the only mode that doesn't suck.
-final int WaveyPatterns = modeCount++; // not interactive yet
+final int BigAssCircles = modeCount++;
+final int UpTheStrands = modeCount++;
+//final int UpTheStrands = modeCount++;
+
+final int HandElbowLine = 0;//modeCount++; // doesn't use correct coordinate translation
+final int WaveyPatterns = 0;//modeCount++; // not interactive yet
 
 final int FlyerModeCount = 2;
  
-final int TEST_MODE = BigAssCircles;
+final int TEST_MODE = UpTheStrands;
+
+private float mod(float f, int m)
+{
+  f = f % m;
+  while (f < 0) {
+    f += m;
+  }
+  return f;
+}
 
 private class BezierPath {
   PVector p1, p2;
@@ -24,6 +35,8 @@ public class Flyer {
   Random random;
   private int mode;
   boolean useColor;
+  float leftHue;
+  float rightHue;
   
   PVector lastLeftHand = null;
   PVector lastLeftElbow = null;
@@ -62,7 +75,7 @@ public class Flyer {
     PVector jointPx = this.coordsForJoint(joint);
     PVector wingPos = new PVector();
     wingPos.x = (jointPx.x * wingWidth / imageWidth) + (isRight ? wingWidth : 0.0);
-    wingPos.y = (jointPx.y * wingHeight / imageHeight);
+    wingPos.y = (jointPx.y * wingHeight / (imageHeight * 0.8));
     return wingPos;
   }
   
@@ -75,6 +88,8 @@ public class Flyer {
       lastRightHand = null;
       
       useColor = (int)random(2) == 0;
+      leftHue = (int)random(100);
+      rightHue = (int)random(100);
       return;
     }
       
@@ -94,43 +109,73 @@ public class Flyer {
     //} else if (mode == WaveyPatterns) {
     //  runModeWaveyPatterns();
     }
+    
+    KJoint[] joints = this.skeleton.getJoints();
+    int leftHandState = joints[KinectPV2.JointType_HandLeft].getState();
+    if (leftHandState == KinectPV2.HandState_Lasso) {
+    }
+    
+    
+    // KinectPV2.HandState_Open
   }
   
   private void runModeBigAssCircles()
   {
     KJoint[] joints = this.skeleton.getJoints();
-    PVector leftHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandLeft], false);
-    PVector rightHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandRight], true);
+    KJoint leftHand = joints[KinectPV2.JointType_HandLeft];
+    KJoint rightHand = joints[KinectPV2.JointType_HandRight];
+    
+    int leftDirection = (leftHand.getState() == KinectPV2.HandState_Open ? -1 : 1);
+    int rightDirection = (rightHand.getState() == KinectPV2.HandState_Open ? -1 : 1);
+
+    PVector leftHandPx = wingPositionForJoint(leftHand, false);
+    PVector rightHandPx = wingPositionForJoint(rightHand, true);
     
     colorMode(HSB, 100);
-    fill(50, 0, 100);
     noStroke();
-    ellipse(leftHandPx.x, leftHandPx.y, 4, 20);
-    ellipse(rightHandPx.x, rightHandPx.y, 4, 20);
+    for (int r = 0; r < 60; ++r) {
+      stroke((leftHue + 50 + 1 * r) % 100, 100, 100);
+      ellipse(leftHandPx.x, leftHandPx.y, 4, r);
+      stroke((rightHue + 1 * r) % 100, 100, 100);
+      ellipse(rightHandPx.x, rightHandPx.y, 4, r);
+    }
+    leftHue = mod(leftHue + leftDirection * 0.5, 100);
+    rightHue = mod(rightHue + rightDirection * 0.5, 100);
   }
   
   private void runModeUpTheStrands()
   {
     KJoint[] joints = this.skeleton.getJoints();
     PVector leftHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandLeft], false);
-    PVector rightHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandRight], true);
+    PVector rightHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandRight], false);
     
     colorMode(HSB, 100);
     noStroke();
     if (lastLeftHand != null) {
       float speed = abs(lastLeftHand.x - leftHandPx.x);
-      int hue = (int)(200 * speed);
       if (useColor) {
-        hue = min(90, hue);
-        fill(hue, 100, 100);
+        fill(leftHue, 100, 100);
       } else {
         fill(0, 0, 100);
       }
       rect(0, min(leftHandPx.y, lastLeftHand.y), wingWidth, abs(leftHandPx.y - lastLeftHand.y));
     }
     
+    if (lastRightHand != null) {
+      float speed = abs(lastRightHand.x - rightHandPx.x);
+      if (useColor) {
+        fill(rightHue, 100, 100);
+      } else {
+        fill(0, 0, 100);
+      }
+      rect(wingWidth, min(rightHandPx.y, lastRightHand.y), wingWidth, abs(rightHandPx.y - lastRightHand.y));
+    }
+    
     lastLeftHand = leftHandPx;
-    lastRightHand = rightHandPx;    
+    lastRightHand = rightHandPx; 
+    
+    leftHue = (leftHue + 1) % 100;
+    rightHue = (rightHue + 1) % 100;
   }
   
   private float contain(float f, float theMax)

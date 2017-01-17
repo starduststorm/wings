@@ -1,3 +1,15 @@
+public enum ChevronsPatternType {
+  Random,
+  Rainbow,
+  MixedColor,
+  Monochrome,
+};
+
+public <T extends Enum<?>> T randomEnum(Class<T> clazz){
+  int x = rand.nextInt(clazz.getEnumConstants().length);
+  return clazz.getEnumConstants()[x];
+}
+
 public color lerpColorMod(color c1, color c2, float amt)
 {
   pushStyle();
@@ -23,17 +35,28 @@ public class ChevronsPattern extends IdlePattern {
   float leftLeadingValue, rightLeadingValue;
   float leftRotation, rightRotation;
   float leftMagnitude, rightMagnitude;
-  boolean useColor;
   
-  public ChevronsPattern(int displayWidth, int displayHeight, boolean useColor)
+  ChevronsPatternType type;
+  ChevronsPatternType initType;
+  
+  int nonColorHue;
+  int secondHue;
+  
+  public ChevronsPattern(ChevronsPatternType type, int displayWidth, int displayHeight)
   {
     super(displayWidth, displayHeight);
-    this.useColor = useColor;
+    this.type = type;
+    this.initType = type;
   }
   
   public void startPattern()
   {
     super.startPattern();
+    
+    if (this.initType == ChevronsPatternType.Random) {
+      this.type = randomEnum(ChevronsPatternType.class);
+    }
+    
     leadingEdge = 0;
     leftLeadingValue = (int)random(100);
     rightLeadingValue = leftLeadingValue;
@@ -41,6 +64,11 @@ public class ChevronsPattern extends IdlePattern {
     rightRotation = 0;
     leftMagnitude = 1.0;
     rightMagnitude = 1.0;
+    
+    if (this.type == ChevronsPatternType.MixedColor) {
+      nonColorHue = (int)random(100);
+      secondHue = nonColorHue + (int)random(-30, 30);
+    }
   }
   
   private void lineGradient(float x1, float y1, float x2, float y2, color c1, color c2)
@@ -57,7 +85,13 @@ public class ChevronsPattern extends IdlePattern {
       // Draw "segments", not points
       float x = x1 + i * (x2 - x1) / segments;
       float y = y1 + i * (y2 - y1) / segments;
-      color c = lerpColorMod(c1, c2, i / (float)segments);
+      color c;
+      if (this.type == ChevronsPatternType.Rainbow) {
+        c = lerpColorMod(c1, c2, i / (float)segments);
+      } else {
+        // My implementation of lerpColorMod to treat hue as circular is buggy. Not sure what's wrong.
+        c = lerpColor(c1, c2, i / (float)segments);
+      }
       stroke(c, alpha);
       line(lastX, lastY, x, y);
       lastX = x;
@@ -72,12 +106,16 @@ public class ChevronsPattern extends IdlePattern {
     for (float i = -wingHeight / 2 ; i < wingHeight / 2; i+=0.5) {
       float chevronVertex = i;
       color startColor, endColor;
-      if (useColor) {
-        startColor = color(mod(leadingValue + (2 + 3 * rotationMulti) * i, 100), 100, 100);
-        endColor = color((hue(startColor) + 40) % 100, 100, 100);
-      } else {
+      if (this.type == ChevronsPatternType.Rainbow) {
+        float startHue = leadingValue + (2 + 3 * rotationMulti) * i;
+        startColor = color(mod(startHue, 100), 100, 100);
+        endColor = color((hue(startColor) + 40) % 100, 100, 30);
+      } else if (this.type == ChevronsPatternType.Monochrome) {
         startColor = color(0, 0, 50 * sin(leadingValue + (0.3 + 0.7 * rotationMulti) * i) + 40);
         endColor = color(0, 0, 0);
+      } else {
+        startColor = color(nonColorHue, 100, 50 * sin(leadingValue + (0.3 + 0.7 * rotationMulti) * i) + 40);
+        endColor = color(secondHue, 100, 10);
       }
       
       pushMatrix();
@@ -104,9 +142,13 @@ public class ChevronsPattern extends IdlePattern {
     drawWing(rightRotation, rightLeadingValue, wingWidth, 1);
     noClip();
     
-    if (useColor) {
-      leftLeadingValue = mod(leftLeadingValue - 1 * leftMagnitude, 100);
-      rightLeadingValue = mod(rightLeadingValue - 1 * rightMagnitude, 100);
+    if (this.type == ChevronsPatternType.Rainbow) {
+      float chaos = 1.0;
+      if (leftMagnitude == 1 && rightMagnitude == 1) {
+        chaos = (0.5 * (sin(0.05 * leadingEdge) + 1.8));
+      }
+      leftLeadingValue = mod(leftLeadingValue - 1 * leftMagnitude * chaos, 100);
+      rightLeadingValue = mod(rightLeadingValue - 1 * rightMagnitude * chaos, 100);
     } else {
       rightLeadingValue -= 0.1 * leftMagnitude;
       leftLeadingValue -= 0.1 * rightMagnitude;
@@ -114,8 +156,7 @@ public class ChevronsPattern extends IdlePattern {
     
     leadingEdge = (leadingEdge + 0.1);
     if (leadingEdge > wingWidth) {
-      leadingEdge -= wingWidth;
-      // FIXME: fade out better
+      // FIXME: fade out better?
       if (this.isStopping()) {
         this.stopCompleted();
       }

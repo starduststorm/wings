@@ -60,8 +60,9 @@ void setup()
   idlePatterns.add(new PulsePattern(PulsePatternType.Bounce, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new BitsPattern(wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new FadeParityPattern(wingsRegionWidth, wingsRegionHeight));
-  idlePatterns.add(new ChevronsPattern(wingsRegionWidth, wingsRegionHeight, false));
-  idlePatterns.add(new ChevronsPattern(wingsRegionWidth, wingsRegionHeight, true));
+  idlePatterns.add(new ChevronsPattern(ChevronsPatternType.Rainbow, wingsRegionWidth, wingsRegionHeight));
+  idlePatterns.add(new ChevronsPattern(ChevronsPatternType.MixedColor, wingsRegionWidth, wingsRegionHeight));
+  idlePatterns.add(new ChevronsPattern(ChevronsPatternType.Monochrome, wingsRegionWidth, wingsRegionHeight));
   
   background(0,0,0);
   //size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 

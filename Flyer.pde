@@ -41,6 +41,9 @@ public class Flyer {
   PVector lastRightHand = null;
   PVector lastRightElbow = null;
   
+  boolean leftColorLocked;
+  boolean rightColorLocked;
+  
   // mode vars
   
   ArrayList<BezierPath> beziers;
@@ -53,7 +56,7 @@ public class Flyer {
   {
     random = new Random();
     beziers = new ArrayList<BezierPath>();
-    this.chevrons = new ChevronsPattern(wingsRegionWidth, wingsRegionHeight, rand.nextBoolean());
+    this.chevrons = new ChevronsPattern(ChevronsPatternType.Random, wingsRegionWidth, wingsRegionHeight);
   }
   
   //private PVector screenPositionForJoint(int joint)
@@ -97,6 +100,9 @@ public class Flyer {
     useColor = (int)random(2) == 0;
     leftHue = (int)random(100);
     rightHue = (int)random(100);
+    
+    leftColorLocked = false;
+    rightColorLocked = false;
     
     if (mode == ChevronPoint) {
       chevrons.startPattern();
@@ -153,13 +159,14 @@ public class Flyer {
   private void runModeUpTheStrands()
   {
     KJoint[] joints = this.skeleton.getJoints();
-    PVector leftHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandLeft], false);
-    PVector rightHandPx = wingPositionForJoint(joints[KinectPV2.JointType_HandRight], false);
+    KJoint leftHand = joints[KinectPV2.JointType_HandLeft];
+    PVector leftHandPx = wingPositionForJoint(leftHand, false);
+    KJoint rightHand = joints[KinectPV2.JointType_HandRight];
+    PVector rightHandPx = wingPositionForJoint(rightHand, false);
     
     colorMode(HSB, 100);
     noStroke();
     if (lastLeftHand != null) {
-      float speed = abs(lastLeftHand.x - leftHandPx.x);
       if (useColor) {
         fill(leftHue, 100, 100);
       } else {
@@ -169,7 +176,6 @@ public class Flyer {
     }
     
     if (lastRightHand != null) {
-      float speed = abs(lastRightHand.x - rightHandPx.x);
       if (useColor) {
         fill(rightHue, 100, 100);
       } else {
@@ -179,10 +185,34 @@ public class Flyer {
     }
     
     lastLeftHand = leftHandPx;
-    lastRightHand = rightHandPx; 
+    lastRightHand = rightHandPx;
     
-    leftHue = (leftHue + 1) % 100;
-    rightHue = (rightHue + 1) % 100;
+    /*
+    not tracked = 1
+    open = 2
+    closed = 3
+    lasso = 4
+    But we often read state = 0, which I'm not sure what that means. 
+    I'll assume it basically means not tracked, so let's only toggle on open vs closed.
+    */
+    int leftHandState = leftHand.getState();
+    if (leftHandState == KinectPV2.HandState_Closed) {
+      leftColorLocked = true;
+    } else if (leftHandState == KinectPV2.HandState_Open) {
+      leftColorLocked = false;
+    }
+    int rightHandState = rightHand.getState();
+    if (rightHandState == KinectPV2.HandState_Closed) {
+      rightColorLocked = true;
+    } else if (rightHandState == KinectPV2.HandState_Open) {
+      rightColorLocked = false;
+    }    
+    if (!leftColorLocked) {
+      leftHue = (leftHue + 1) % 100;
+    }
+    if (!rightColorLocked) {
+      rightHue = (rightHue + 1) % 100;
+    }
   }
   
   private float contain(float f, float theMax)

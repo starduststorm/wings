@@ -167,8 +167,18 @@ void draw()
     }
   }
   
+  boolean flyerNeedsStart = (trackingSkeleton != null && flyer.skeleton == null);
+  boolean flyerNeedsStop = (trackingSkeleton == null && flyer.skeleton != null);
   flyer.skeleton = trackingSkeleton;
-  flyer.update();
+  if (flyerNeedsStart) {
+    flyer.startFlying();
+  }
+  if (flyerNeedsStop) {
+    flyer.stopFlying();
+  }
+  if (flyer.skeleton != null) {
+    flyer.update();
+  }
   
   // Write pixels
   for (int x = 0; x < wingsRegionWidth; ++x) {

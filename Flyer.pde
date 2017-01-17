@@ -3,14 +3,12 @@ import java.util.Random;
 int modeCount = 0;
 final int BigAssCircles = ++modeCount;
 final int UpTheStrands = ++modeCount;
-//final int UpTheStrands = modeCount++;
+final int ChevronPoint = ++modeCount;
 
-final int HandElbowLine = 0;//modeCount++; // doesn't use correct coordinate translation
-final int WaveyPatterns = 0;//modeCount++; // not interactive yet
-
-final int FlyerModeCount = 2;
+final int HandElbowLine = -1;//modeCount++; // doesn't use correct coordinate translation
+final int WaveyPatterns = -1;//modeCount++; // not interactive yet
  
-final int TEST_MODE = BigAssCircles;
+final int TEST_MODE = 0;
 
 public float mod(float f, int m)
 {
@@ -47,12 +45,15 @@ public class Flyer {
   
   ArrayList<BezierPath> beziers;
   
+  ChevronsPattern chevrons;
+  
   //
   
   Flyer()
   {
     random = new Random();
     beziers = new ArrayList<BezierPath>();
+    this.chevrons = new ChevronsPattern(wingsRegionWidth, wingsRegionHeight, rand.nextBoolean());
   }
   
   //private PVector screenPositionForJoint(int joint)
@@ -79,26 +80,38 @@ public class Flyer {
     return wingPos;
   }
   
-  public void update()
+  public void startFlying()
   {
-    if (this.skeleton == null) {
-      lastLeftElbow = null;
-      lastLeftHand = null;
-      lastRightElbow = null;
-      lastRightHand = null;
-      
-      useColor = (int)random(2) == 0;
-      leftHue = (int)random(100);
-      rightHue = (int)random(100);
-      return;
-    }
-      
     if (TEST_MODE != 0) {
       mode = TEST_MODE;
     } else if (this.skeleton != null) {
-      mode = random.nextInt(FlyerModeCount);
+      mode = random.nextInt(modeCount) + 1;
     }
+    println("FLYING WITH MODE " + mode);
     
+    lastLeftElbow = null;
+    lastLeftHand = null;
+    lastRightElbow = null;
+    lastRightHand = null;
+    
+    useColor = (int)random(2) == 0;
+    leftHue = (int)random(100);
+    rightHue = (int)random(100);
+    
+    if (mode == ChevronPoint) {
+      chevrons.startPattern();
+    }
+  }
+  
+  public void stopFlying()
+  {
+    if (chevrons.isRunning()) {
+      chevrons.lazyStop();
+    }
+  }
+  
+  public void update()
+  {
     // fuck java's switch statement
     if (mode == HandElbowLine) {
       runModeHandElbowLine();
@@ -108,14 +121,9 @@ public class Flyer {
       runModeUpTheStrands();
     //} else if (mode == WaveyPatterns) {
     //  runModeWaveyPatterns();
+    } else if (mode == ChevronPoint) {
+      runModeChevronPoint();
     }
-    
-    //KJoint[] joints = this.skeleton.getJoints();
-    //int leftHandState = joints[KinectPV2.JointType_HandLeft].getState();
-    //if (leftHandState == KinectPV2.HandState_Lasso) {
-    //}
-    
-    // KinectPV2.HandState_Open
   }
   
   private void runModeBigAssCircles()
@@ -138,8 +146,8 @@ public class Flyer {
       stroke((rightHue + 1 * r) % 100, 100, 100);
       ellipse(rightHandPx.x, rightHandPx.y, 4, r);
     }
-    leftHue = mod(leftHue + leftDirection * 0.5, 100);
-    rightHue = mod(rightHue + rightDirection * 0.5, 100);
+    leftHue = mod(leftHue + leftDirection * 1.0, 100);
+    rightHue = mod(rightHue + rightDirection * 1.0, 100);
   }
   
   private void runModeUpTheStrands()
@@ -186,6 +194,37 @@ public class Flyer {
       return theMax;
     }
     return f;
+  }
+  
+  private void runModeChevronPoint()
+  {
+    KJoint[] joints = skeleton.getJoints();
+    KJoint leftHand = joints[KinectPV2.JointType_HandLeft];
+    PVector vLeftHand = coordsForJoint(leftHand);
+    PVector vLeftShoulder = coordsForJoint(joints[KinectPV2.JointType_ShoulderLeft]);
+    KJoint rightHand = joints[KinectPV2.JointType_HandRight];
+    PVector vRightHand = coordsForJoint(rightHand);
+    PVector vRightShoulder = coordsForJoint(joints[KinectPV2.JointType_ShoulderRight]);
+    
+    PVector negativeUnit = new PVector(-1.0, 0.0, 0.0);
+    PVector leftArm = vLeftHand.sub(vLeftShoulder);
+    chevrons.leftRotation = PVector.angleBetween(negativeUnit, leftArm);
+    // frakking angleBetween always returns an angle < pi.
+    if (leftArm.y > 0) {
+      chevrons.leftRotation = 2 * PI - chevrons.leftRotation;
+    }
+    // Mag ranges from around 10 to around 120.
+    chevrons.leftMagnitude = max(10, min(120, leftArm.mag())) / 30.0;
+    
+    PVector unit = new PVector(1.0, 0.0, 0.0);
+    PVector rightArm = vRightHand.sub(vRightShoulder);
+    chevrons.rightRotation = PVector.angleBetween(unit, rightArm);
+    if (rightArm.y < 0) {
+      chevrons.rightRotation = 2 * PI - chevrons.rightRotation;
+    }
+    chevrons.rightMagnitude = max(10, min(120, rightArm.mag())) / 30.0;
+    
+    chevrons.update();
   }
   
   //private void runModeWaveyPatterns()

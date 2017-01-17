@@ -62,7 +62,6 @@ class FadeParityPattern extends IdlePattern {
     color lerpc2 = lerpColor(oldc2, c2, lerpRunningMillis / lerpDuration);
 
     pushStyle();
-    //noSmooth();
     for (int w = 0; w < displayWidth; ++w) {
       for (int h = 0; h < displayHeight; ++h) {
         color lerpc = (h % 2 == 0 ? lerpc1 : lerpc2);

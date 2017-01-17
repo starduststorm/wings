@@ -20,7 +20,9 @@ public color lerpColorMod(color c1, color c2, float amt)
 
 public class ChevronsPattern extends IdlePattern {
   float leadingEdge;
-  float leadingValue;
+  float leftLeadingValue, rightLeadingValue;
+  float leftRotation, rightRotation;
+  float leftMagnitude, rightMagnitude;
   boolean useColor;
   
   public ChevronsPattern(int displayWidth, int displayHeight, boolean useColor)
@@ -33,7 +35,12 @@ public class ChevronsPattern extends IdlePattern {
   {
     super.startPattern();
     leadingEdge = 0;
-    leadingValue = (int)random(100);
+    leftLeadingValue = (int)random(100);
+    rightLeadingValue = leftLeadingValue;
+    leftRotation = 0;
+    rightRotation = 0;
+    leftMagnitude = 1.0;
+    rightMagnitude = 1.0;
   }
   
   private void lineGradient(float x1, float y1, float x2, float y2, color c1, color c2)
@@ -58,44 +65,57 @@ public class ChevronsPattern extends IdlePattern {
     }
   }
   
-  public void update()
+  public void drawWing(float rotation, float leadingValue, int xOffset, int direction)
   {
     colorMode(HSB, 100);
-    for (int i = 0 ; i < wingWidth * 2; ++i) {
+    float rotationMulti = abs(cos(rotation));
+    for (float i = -wingHeight / 2 ; i < wingHeight / 2; i+=0.5) {
       float chevronVertex = i;
       color startColor, endColor;
       if (useColor) {
-        startColor = color((leadingValue + 5 * i) % 100, 100, 100);
+        startColor = color(mod(leadingValue + (2 + 3 * rotationMulti) * i, 100), 100, 100);
         endColor = color((hue(startColor) + 40) % 100, 100, 100);
       } else {
-        startColor = color(0, 0, 50 * sin(leadingValue + i) + 50);
+        startColor = color(0, 0, 50 * sin(leadingValue + (0.3 + 0.7 * rotationMulti) * i) + 40);
         endColor = color(0, 0, 0);
       }
       
-      clip(0, 0, wingWidth, displayHeight);
-      lineGradient(wingWidth - chevronVertex, displayHeight / 2.0, wingWidth - chevronVertex + 4, 0, 
-                  startColor, endColor);
-      lineGradient(wingWidth - chevronVertex, displayHeight / 2.0, wingWidth - chevronVertex + 4, displayHeight, 
-                  startColor, endColor);
-      noClip();
-      
-      clip(wingWidth, 0, wingWidth, displayHeight);
-      lineGradient(wingWidth + chevronVertex, displayHeight / 2.0, wingWidth + chevronVertex - 4, 0, 
-                  startColor, endColor);
-      lineGradient(wingWidth + chevronVertex, displayHeight / 2.0, wingWidth + chevronVertex - 4, displayHeight,
-                  startColor, endColor);
-      noClip();
+      pushMatrix();
+      translate(xOffset + wingWidth / 2.0, displayHeight / 2.0, 0.0);
+      rotateZ(rotation);
+      translate(-xOffset - wingWidth / 2.0, -displayHeight / 2.0, 0.0);
+      lineGradient(wingWidth + direction * chevronVertex, displayHeight / 2.0, 
+                   wingWidth + direction * (chevronVertex - 5), 0, 
+                   startColor, endColor);
+      lineGradient(wingWidth + direction * chevronVertex, displayHeight / 2.0, 
+                   wingWidth + direction * (chevronVertex - 5), displayHeight, 
+                   startColor, endColor);
+      popMatrix();
     }
+  }
+  
+  public void update()
+  {
+   
+    clip(0, 0, wingWidth, displayHeight);
+    drawWing(leftRotation, leftLeadingValue, 0, -1);
+    noClip();
+    clip(wingWidth, 0, wingWidth, displayHeight);
+    drawWing(rightRotation, rightLeadingValue, wingWidth, 1);
+    noClip();
     
     if (useColor) {
-      leadingValue = mod(leadingValue - 1, 100);
+      leftLeadingValue = mod(leftLeadingValue - 1 * leftMagnitude, 100);
+      rightLeadingValue = mod(rightLeadingValue - 1 * rightMagnitude, 100);
     } else {
-      leadingValue -= 0.1;
+      rightLeadingValue -= 0.1 * leftMagnitude;
+      leftLeadingValue -= 0.1 * rightMagnitude;
     }
     
     leadingEdge = (leadingEdge + 0.1);
     if (leadingEdge > wingWidth) {
       leadingEdge -= wingWidth;
+      // FIXME: fade out better
       if (this.isStopping()) {
         this.stopCompleted();
       }

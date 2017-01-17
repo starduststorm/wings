@@ -81,7 +81,6 @@ public class PulsePattern extends IdlePattern {
       int pulseY = (int)ceil(percentComplete * (this.displayHeight + 1));
       
       colorMode(RGB, 100);
-      noSmooth();
       for (int i = lastY; i < pulseY; ++i) {
         float alpha = max(40, 100 * (i / (float)pulseY));
         stroke(0, 30, 50, alpha);
@@ -121,7 +120,6 @@ public class PulsePattern extends IdlePattern {
       }
       
       colorMode(HSB, 100);
-      noSmooth();
       stroke(theHue, 100, 100);
       for (int i = 0; i < abs(pos - lastY); ++i) {
         int sign = (pos - lastY > 0 ? -1 : 1);

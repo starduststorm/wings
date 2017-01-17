@@ -27,6 +27,8 @@ IdlePattern activeIdlePattern = null;
 
 boolean trackingPerson = false;
 
+PApplet sketch = this;
+
 void setup()
 {
   opc = new OPC(this, "127.0.0.1", 7890);
@@ -63,6 +65,7 @@ void setup()
   idlePatterns.add(new ChevronsPattern(ChevronsPatternType.Rainbow, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new ChevronsPattern(ChevronsPatternType.MixedColor, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new ChevronsPattern(ChevronsPatternType.Monochrome, wingsRegionWidth, wingsRegionHeight));
+  idlePatterns.add(new SpectrumPattern(wingsRegionWidth, wingsRegionHeight));
   
   background(0,0,0);
   //size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 

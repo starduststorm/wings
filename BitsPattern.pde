@@ -1,12 +1,5 @@
 import java.util.*;
 
-Random rand = new Random();
-
-private int randomSign()
-{
-  return (rand.nextBoolean() ? 1 : -1);
-}
-
 private class Bit
 {
   private PVector pos;

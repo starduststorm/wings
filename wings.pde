@@ -171,6 +171,11 @@ void draw()
     }
   }
   
+  if (activeIdlePattern != null && millis() - activeIdlePattern.startMillis > 1000 * 60 * 4) {
+    activeIdlePattern.lazyStop();
+    activeIdlePattern = null;
+  }
+  
   boolean flyerNeedsStart = (trackingSkeleton != null && flyer.skeleton == null);
   boolean flyerNeedsStop = (trackingSkeleton == null && flyer.skeleton != null);
   flyer.skeleton = trackingSkeleton;

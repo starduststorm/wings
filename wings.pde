@@ -228,7 +228,7 @@ boolean userIsInPosition(KSkeleton skel)
   KJoint head = joints[KinectPV2.JointType_Head];
   PVector p = coordsForJoint(head);
   //println("Head pos = " + p);
-  if (abs(p.x - 260) < 60) {  
+  if (abs(p.x - 250) < 60 && p.y < 210.0) {  
     return true;
   }
   return false;

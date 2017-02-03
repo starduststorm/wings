@@ -2,7 +2,7 @@ import java.util.Random;
 
 int modeCount = 0;
 final int BigAssCircles = ++modeCount;
-final int UpTheStrands = ++modeCount;
+final int UpTheStrands = -1;//++modeCount;
 final int ChevronPoint = ++modeCount;
 
 final int HandElbowLine = -1;//modeCount++; // doesn't use correct coordinate translation
@@ -78,7 +78,7 @@ public class Flyer {
   {
     PVector jointPx = this.coordsForJoint(joint);
     PVector wingPos = new PVector();
-    wingPos.x = (jointPx.x * wingWidth / imageWidth) + (isRight ? wingWidth : 0.0);
+    wingPos.x = (jointPx.x * wingWidth / imageWidth) + (isRight ? wingWidth : 0.0) + (isRight ? -1 : 1);
     wingPos.y = (jointPx.y * wingHeight / (imageHeight * 0.8));
     return wingPos;
   }

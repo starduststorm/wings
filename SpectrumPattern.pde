@@ -61,7 +61,7 @@ public class SpectrumPattern extends IdlePattern
     float prevAmp = -1;
     for (int i = 0; i < audioBands; ++i) {
       // amplify and balance
-      float moddedAudio = audioSpectrum[i] * displayHeight * 140;// * (i / 2.0 + 5);
+      float moddedAudio = audioSpectrum[i] * displayHeight * 40;// * (i / 2.0 + 5);
       
       final float normCount = 5.0;
       normalizedSpectrum[i] = (normalizedSpectrum[i] * (normCount - 1) + moddedAudio) / normCount;

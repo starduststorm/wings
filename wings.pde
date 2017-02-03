@@ -1,3 +1,5 @@
+final boolean hasKinect = true;
+
 import KinectPV2.*;
 
 OPC opc;
@@ -33,13 +35,17 @@ void setup()
 {
   opc = new OPC(this, "127.0.0.1", 7890);
   
-  kinect = new KinectPV2(this);   
-  kinect.enableDepthImg(true);   
-  kinect.enableSkeletonDepthMap(true);
-  //kinect.enableSkeleton3DMap(true);
-  kinect.enableBodyTrackImg(true);
-  //kinect.enableInfraredImg(true);
-  kinect.init();
+  if (hasKinect) {
+    kinect = new KinectPV2(this);
+  }
+  if (kinect != null) {
+    kinect.enableDepthImg(true);   
+    kinect.enableSkeletonDepthMap(true);
+    //kinect.enableSkeleton3DMap(true);
+    kinect.enableBodyTrackImg(true);
+    //kinect.enableInfraredImg(true);
+    kinect.init();
+  }
   
   int depthWidth = 512;
   int depthHeight = 424;
@@ -65,7 +71,9 @@ void setup()
   idlePatterns.add(new ChevronsPattern(ChevronsPatternType.Rainbow, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new ChevronsPattern(ChevronsPatternType.MixedColor, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new ChevronsPattern(ChevronsPatternType.Monochrome, wingsRegionWidth, wingsRegionHeight));
-  idlePatterns.add(new SpectrumPattern(wingsRegionWidth, wingsRegionHeight));
+  if (hasKinect) {
+    idlePatterns.add(new SpectrumPattern(wingsRegionWidth, wingsRegionHeight));
+  }
   
   background(0,0,0);
   //size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 
@@ -85,7 +93,7 @@ void draw()
   int currentMillis = millis();
   
   // Draw infrared image and skeleton
-  PImage depthImage = kinect.getDepthImage();
+  PImage depthImage = (kinect != null ? kinect.getDepthImage() : null);
   if (depthImage != null) {
     blendMode(BLEND);
     pushMatrix();
@@ -102,33 +110,33 @@ void draw()
     popMatrix();
   }
   
-  
-  ArrayList<KSkeleton> skeletons = kinect.getSkeletonDepthMap();
-  
   boolean wasTrackingPerson = trackingPerson;
   trackingPerson = false;
-  
   KSkeleton trackingSkeleton = null;
   
-  for (KSkeleton skeleton : skeletons) {
-    if (skeleton.isTracked()) {
-      KJoint[] joints = skeleton.getJoints();
-      KJoint head = joints[KinectPV2.JointType_Head];
-      
-      PVector p = coordsForJoint(head);
-      if (!Float.isFinite(p.x) || !Float.isFinite(p.y)) {
-        // Tends to happen as bodies move out of the frame?
-        continue;
-      }
-      if (userIsInPosition(skeleton)) {
-        trackingPerson = true;
-        lastUserSeenMillis = currentMillis;
+  if (kinect != null) {
+    ArrayList<KSkeleton> skeletons = kinect.getSkeletonDepthMap();
+    
+    for (KSkeleton skeleton : skeletons) {
+      if (skeleton.isTracked()) {
+        KJoint[] joints = skeleton.getJoints();
+        KJoint head = joints[KinectPV2.JointType_Head];
         
-        translate(wingsRegionWidth, 0, 0);
-        drawSkeleton(skeleton);
-        translate(-wingsRegionWidth, 0, 0);
-        trackingSkeleton = skeleton;
-        break;
+        PVector p = coordsForJoint(head);
+        if (!Float.isFinite(p.x) || !Float.isFinite(p.y)) {
+          // Tends to happen as bodies move out of the frame?
+          continue;
+        }
+        if (userIsInPosition(skeleton)) {
+          trackingPerson = true;
+          lastUserSeenMillis = currentMillis;
+          
+          translate(wingsRegionWidth, 0, 0);
+          drawSkeleton(skeleton);
+          translate(-wingsRegionWidth, 0, 0);
+          trackingSkeleton = skeleton;
+          break;
+        }
       }
     }
   }
@@ -154,8 +162,11 @@ void draw()
   if (currentMillis - lastUserSeenMillis > 1000) {
     if (activeIdlePattern == null) {
       int choice = (int)random(idlePatterns.size());
-      activeIdlePattern = idlePatterns.get(choice);
-      activeIdlePattern.startPattern();
+      IdlePattern idlePattern = idlePatterns.get(choice);
+      if (!idlePattern.isRunning() && !idlePattern.isStopping()) {
+        idlePattern.startPattern();
+        activeIdlePattern = idlePattern;
+      }
     }
   }
   
@@ -171,7 +182,7 @@ void draw()
     }
   }
   
-  if (activeIdlePattern != null && millis() - activeIdlePattern.startMillis > 1000 * 60 * 4) {
+  if (activeIdlePattern != null && millis() - activeIdlePattern.startMillis > 1000 * 60 * 2) {
     activeIdlePattern.lazyStop();
     activeIdlePattern = null;
   }

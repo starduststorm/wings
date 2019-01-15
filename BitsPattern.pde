@@ -83,7 +83,7 @@ public class BitsPattern extends IdlePattern {
       Bit bit = it.next();
       float alpha = 100 * bit.ageAlpha();
       stroke(bitsColor, alpha);
-      point(bit.pos.x, bit.pos.y, 0);
+      point(bit.pos.x, bit.pos.y);
       
       if (bit.age() > 3000) {
         it.remove();

@@ -1,4 +1,4 @@
-final boolean hasKinect = true;
+final boolean hasKinect = false;
 
 import KinectPV2.*;
 
@@ -77,7 +77,7 @@ void setup()
   
   background(0,0,0);
   //size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 
-  size(528, 424, P3D);
+  size(528, 424);
   
   frameRate(60);
   textSize(8);

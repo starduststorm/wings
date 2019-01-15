@@ -112,8 +112,9 @@ public class SpectrumPattern extends IdlePattern
         
         color c1 = color(hue, 100, 20);
         color c2 = color((hue + 40 * (displayHeight - amp) / displayHeight) % 100, 100, 100);
-        lineGradient(wingWidth + i, displayHeight, wingWidth + i, amp, c1, c2, waveformAlpha);
-        lineGradient(wingWidth - i - 1, displayHeight, wingWidth - i - 1, amp, c1, c2, waveformAlpha);
+        // FIXME: waveformAlpha
+        //lineGradient(wingWidth + i, wingWidth, displayHeight + i, amp, c1, c2);
+        //lineGradient(wingWidth - i - 1, wingWidth, displayHeight - i - 1, amp, c1, c2);
       }
       
       prevAmp = amp;

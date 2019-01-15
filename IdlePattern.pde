@@ -5,7 +5,6 @@ public abstract class IdlePattern
   
   protected int startMillis = -1;
   protected int stopMillis = -1;
-  private boolean stopping = false;
   
   public IdlePattern(int displayWidth, int displayHeight)
   {

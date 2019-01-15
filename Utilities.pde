@@ -30,9 +30,15 @@ public color lerpColorMod(color c1, color c2, float amt)
   return c;
 }
 
-public void lineGradient(float x1, float y1, float x2, float y2, color c1, color c2, float alpha)
+public void lineGradient(PGraphics pg, float x1, float y1, float x2, float y2, color c1, color c2, float alpha)
 {
-  colorMode(HSB, 100);
+  if (pg != null) {
+    pg.pushStyle();
+    pg.colorMode(HSB, 100);
+  } else {
+    pushStyle();
+    colorMode(HSB, 100);
+  }
   
   final int segments = 32;
   
@@ -49,9 +55,20 @@ public void lineGradient(float x1, float y1, float x2, float y2, color c1, color
       // My implementation of lerpColorMod to treat hue as circular is buggy. Not sure what's wrong.
       c = lerpColor(c1, c2, i / (float)segments);
     }
-    stroke(c, alpha);
-    line(lastX, lastY, x, y);
+    //println("Gradient: X (" + lastX + " to " + x + "), Y (" + lastY + " to " + y + ")");
+    if (pg != null) {
+      pg.stroke(c, alpha);
+      pg.line(lastX, lastY, x, y);
+    } else {
+      stroke(c, alpha);
+      line(lastX, lastY, x, y);      
+    }
     lastX = x;
     lastY = y;
+  }
+  if (pg != null) {
+    pg.popStyle();
+  } else {
+    popStyle();
   }
 }

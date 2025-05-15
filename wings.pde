@@ -30,6 +30,7 @@ IdlePattern activeIdlePattern = null;
 boolean trackingPerson = false;
 
 PApplet sketch = this;
+SimpleHttpServer server = null;
 
 void setup()
 {
@@ -81,6 +82,20 @@ void setup()
   
   frameRate(60);
   textSize(8);
+
+  server = new SimpleHttpServer();
+  try {
+    server.setup(params -> {
+                System.out.println("http: " + params);
+                for (Map.Entry<String, String> entry : params.entrySet()) {
+                  String key = entry.getKey();
+                  String value = entry.getValue();
+                  println(key, " =>", value);
+                }
+            });
+  } catch (Exception e) {
+     println("Exception ", e);
+  }
 }
 
 public PVector coordsForJoint(KJoint joint)

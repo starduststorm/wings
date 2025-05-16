@@ -53,7 +53,7 @@ public class ChevronsPattern extends IdlePattern {
   
   public PGraphics makeGradient(int gradWidth, int gradHeight, int widthRepetitions)
   {
-    int slant = 5;
+    int slant = 2+(int)random(5);
     
     PGraphics img = createGraphics(gradWidth * widthRepetitions, gradHeight);
     img.beginDraw();

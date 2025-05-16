@@ -149,7 +149,7 @@ public class PulsePattern extends IdlePattern {
             if (this.isStopping()) {
               this.stopCompleted();
             }
-            theLight = -1;
+            theLight = 0;
           }
         }
       }

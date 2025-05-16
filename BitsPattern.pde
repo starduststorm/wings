@@ -54,7 +54,7 @@ public class BitsPattern extends IdlePattern {
     super.startPattern();
     colorMode(RGB, 100);
     // bits re-appearing, get a new color
-    color[] colors = {color(5,70,5), color(70, 5, 5), color(5, 5, 70)};
+    color[] colors = {color(10,100,10), color(100, 10, 10), color(10, 10, 100)};
     bitsColor = colors[(int)random(colors.length)];
     do {
       bitsColor = color((int)random(100),(int)random(100),(int)random(100));

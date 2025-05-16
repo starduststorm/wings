@@ -15,6 +15,8 @@ final int wingHeight = 64;
 final int wingsRegionWidth = 16;
 final int wingsRegionHeight = wingHeight;
 
+final int modeSwitchDelay = 1000 * 60 * 2;
+
 PVector leftHandPosition = new PVector(0, 0);
 PVector rightHandPosition = new PVector(0, 0);
 int unmovedFrames = 0;
@@ -67,17 +69,18 @@ void setup()
   idlePatterns.add(new PulsePattern(PulsePatternType.BlueFall, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new PulsePattern(PulsePatternType.Bounce, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new BitsPattern(wingsRegionWidth, wingsRegionHeight));
-  idlePatterns.add(new FadeParityPattern(wingsRegionWidth, wingsRegionHeight));
-  idlePatterns.add(new ChevronsPattern(ChevronsPatternType.Rainbow, wingsRegionWidth, wingsRegionHeight));
+  // These patterns are currently flickering -- need to dig into why
+  //idlePatterns.add(new FadeParityPattern(wingsRegionWidth, wingsRegionHeight));
+  //idlePatterns.add(new ChevronsPattern(ChevronsPatternType.Rainbow, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new ChevronsPattern(ChevronsPatternType.MixedColor, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new ChevronsPattern(ChevronsPatternType.Monochrome, wingsRegionWidth, wingsRegionHeight));
   if (hasKinect) {
-    idlePatterns.add(new SpectrumPattern(wingsRegionWidth, wingsRegionHeight));
+    //idlePatterns.add(new SpectrumPattern(wingsRegionWidth, wingsRegionHeight));
   }
   
   background(0,0,0);
   //size(wingsRegionWidth + imageWidth, max(wingsRegionHeight, imageHeight), P3D); 
-  size(528, 424);
+  size(100, 100);
   
   frameRate(60);
   textSize(8);
@@ -163,6 +166,8 @@ void draw()
     if (activeIdlePattern == null) {
       int choice = (int)random(idlePatterns.size());
       IdlePattern idlePattern = idlePatterns.get(choice);
+      //println("Choice: ", choice);
+      //println("Pattern:", idlePattern);
       if (!idlePattern.isRunning() && !idlePattern.isStopping()) {
         idlePattern.startPattern();
         activeIdlePattern = idlePattern;
@@ -182,7 +187,7 @@ void draw()
     }
   }
   
-  if (activeIdlePattern != null && millis() - activeIdlePattern.startMillis > 1000 * 60 * 2) {
+  if (activeIdlePattern != null && millis() - activeIdlePattern.startMillis > modeSwitchDelay) {
     activeIdlePattern.lazyStop();
     activeIdlePattern = null;
   }

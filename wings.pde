@@ -68,6 +68,7 @@ void setup()
   idlePatterns.add(new PulsePattern(PulsePatternType.Rainbow, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new PulsePattern(PulsePatternType.BlueFall, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new PulsePattern(PulsePatternType.Bounce, wingsRegionWidth, wingsRegionHeight));
+  idlePatterns.add(new PulsePattern(PulsePatternType.Many, wingsRegionWidth, wingsRegionHeight));
   idlePatterns.add(new BitsPattern(wingsRegionWidth, wingsRegionHeight));
   // These patterns are currently flickering -- need to dig into why
   //idlePatterns.add(new FadeParityPattern(wingsRegionWidth, wingsRegionHeight));

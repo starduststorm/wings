@@ -2,6 +2,7 @@ public enum PulsePatternType {
   Rainbow,
   BlueFall,
   Bounce,
+  Many,
 };
 
 public class PulsePattern extends IdlePattern {
@@ -33,6 +34,8 @@ public class PulsePattern extends IdlePattern {
   public int fadeRate()
   {
     if (type == PulsePatternType.Bounce) {
+      return 10;
+    } else if (type == PulsePatternType.Many) {
       return 10;
     }
     return 6;
@@ -133,6 +136,25 @@ public class PulsePattern extends IdlePattern {
       } else {
         lastY = (int)pos;
       }
+    } else if (type == PulsePatternType.Many) {
+      blendMode(BLEND);
+      colorMode(HSB, 100);
+
+      for (int i = 0; i < 5; ++i) {
+        for (int x = 0; x < displayWidth; ++x) {
+          int idx = (theLight + i * displayHeight/5)%displayHeight;
+          color colo = color((theHue+idx) % 100, 100, 100);
+          set(x, idx, colo);
+          if (theLight > wingsRegionHeight) {
+            if (this.isStopping()) {
+              this.stopCompleted();
+            }
+            theLight = -1;
+          }
+        }
+      }
+      theHue++;
+      ++theLight;
     }
     delay(20);
   }
